@@ -28,5 +28,6 @@ export const config = createConfig({
   transports: {
     [polygon.id]: http()
   },
-  connectors
+  connectors,
+  ssr: true
 })

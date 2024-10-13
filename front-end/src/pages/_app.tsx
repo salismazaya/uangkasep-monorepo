@@ -9,8 +9,8 @@ import { RainbowKitProvider } from '@rainbow-me/rainbowkit';
 
 import { config } from '../wagmi';
 import Head from 'next/head';
-import Navbar from '../components/Navbar';
-import { useIsOwner } from '../context';
+import Navbar from '../components/NavbarComponent';
+import { useIsOwner } from '../hooks';
 import { useContext, useEffect, useState } from 'react';
 
 const font = Raleway({
