@@ -41,13 +41,14 @@ const Home = () => {
       </div>
 
       <div className='grid grid-cols-2 lg:grid-cols-4 mt-3 gap-2'>
-        <IdrtBalanceComponent></IdrtBalanceComponent>
-        <OwnersComponent></OwnersComponent>
-        <VotingRequiredComponent></VotingRequiredComponent>
-        <SubmittedTransactionComponent></SubmittedTransactionComponent>
-        <PendingTransactionComponent></PendingTransactionComponent>
-        <ExecutedTransactionComponent></ExecutedTransactionComponent>
+        <IdrtBalanceComponent />
+        <OwnersComponent />
+        <VotingRequiredComponent />
+        <SubmittedTransactionComponent />
+        <PendingTransactionComponent />
+        <ExecutedTransactionComponent />
       </div>
+
     </>
   )
 };

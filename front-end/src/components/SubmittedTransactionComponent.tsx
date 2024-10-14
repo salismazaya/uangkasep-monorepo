@@ -1,7 +1,16 @@
+import { publicChannel, register } from "../channels";
 import { useSubmittedTransactionCount } from "../hooks";
 
 export default () => {
-    const { transactionCount } = useSubmittedTransactionCount();
+    const { transactionCount, refetch } = useSubmittedTransactionCount();
+    
+    register({
+        unique: 'totalTransaction',
+        channel: publicChannel,
+        eventName: 'Submission',
+        callback: () => refetch()
+    });
+
     return (
         <>
             <div className="stats shadow">
