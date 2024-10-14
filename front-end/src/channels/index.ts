@@ -7,18 +7,8 @@ const pusher = new Pusher(pusherKey, {
 
 export const publicChannel = pusher.subscribe('public');
 
-const registered: string[] = [];
-
-export const register = ({ unique, channel, eventName, callback }: { unique: string, channel: Channel, eventName: string, callback: (data: any) => void }) => {
-    console.log(unique);
-    if (!registered.includes(unique)) {
-        channel.bind(eventName, (data: any) => {
-            console.log(data);
-            console.log(callback);
-            callback(data);
-        });
-    } else {
-        registered.push(unique);
-    }
-
+export const register = ({ channel, eventName, callback }: { channel: Channel, eventName: string, callback: (data: any) => void }) => {
+    channel.bind(eventName, (data: any) => {
+        callback(data);
+    });
 }

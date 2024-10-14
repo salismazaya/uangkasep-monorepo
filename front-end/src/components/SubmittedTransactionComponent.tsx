@@ -1,14 +1,15 @@
 import { publicChannel, register } from "../channels";
-import { useSubmittedTransactionCount } from "../hooks";
+import { useClientOnceOnly, useSubmittedTransactionCount } from "../hooks";
 
 export default () => {
     const { transactionCount, refetch } = useSubmittedTransactionCount();
-    
-    register({
-        unique: 'totalTransaction',
-        channel: publicChannel,
-        eventName: 'Submission',
-        callback: () => refetch()
+
+    useClientOnceOnly(() => {
+        register({
+            channel: publicChannel,
+            eventName: 'Submission',
+            callback: () => refetch()
+        });
     });
 
     return (

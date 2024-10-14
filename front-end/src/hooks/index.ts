@@ -4,6 +4,7 @@ import multisigAbi from "../abis/multisig.abi";
 import { IdrtAddress, kasepAddress, multiSigAddress } from "../variables";
 import erc20Abi from "../abis/erc20.abi";
 import kasepAbi from "../abis/kasep.abi";
+import { useEffect, useState } from "react";
 
 export const useOwners = () => {
     const { data: owners, refetch }: OwnersInterface = useReadContract({
@@ -132,4 +133,18 @@ export const useGetBill = (address: `0x${string}` | undefined) => {
         args: [address]
     });
     return { bill: ((BigInt(bill || 0) / BigInt(10 ** 6)) as unknown) as number, refetch };
+}
+
+export const useClientOnceOnly = (callback: () => void) => {
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
+    useEffect(() => {
+        if (isClient) {
+            callback();    
+        }
+    }, [isClient]);
 }

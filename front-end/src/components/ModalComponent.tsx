@@ -1,9 +1,10 @@
 import { useEffect, useRef } from "react";
 
-function ModalComponent({ openModal, children, setOpenModal }: {
+function ModalComponent({ openModal, children, setOpenModal, hook }: {
     openModal: boolean,
     children: JSX.Element,
-    setOpenModal: any
+    setOpenModal: any,
+    hook?: any
 }) {
     const ref: any = useRef();
 

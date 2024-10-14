@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
-import { useVotingRequired } from "../hooks";
+import { useClientOnceOnly, useVotingRequired } from "../hooks";
 import ModalComponent from "./ModalComponent";
-import { writeContract, waitForTransactionReceipt } from "@wagmi/core";
+import { writeContract } from "@wagmi/core";
 import { config } from "../wagmi";
 import multisigAbi from "../abis/multisig.abi";
 import { multiSigAddress } from "../variables";
-import { contractInterface } from "../helpers/ethers";
-import { toast } from "react-toastify";
+import { contractExecutor, contractInterface } from "../helpers/ethers";
 import { publicChannel, register } from "../channels";
 
 export default () => {
@@ -19,44 +18,25 @@ export default () => {
         setVotingRequiredValue(votingRequired)
     }, [votingRequired]);
 
-    // register({
-    //     unique: 'voting',
-    //     channel: publicChannel,
-    //     eventName: 'RequirementChange',
-    //     callback: () => refetch()
-    // })
+    useClientOnceOnly(() => {
+        register({
+            channel: publicChannel,
+            eventName: 'RequirementChange',
+            callback: () => refetch()
+        });
+    });
 
-    const execute = async () => {
-        const calldata = contractInterface.encodeFunctionData("changeRequirement", [votingRequiredValue])
-        const toastId = toast.loading("Loading...");
-
-        try {
+    const execute = () => {
+        const calldata = contractInterface.encodeFunctionData("changeRequirement", [votingRequiredValue]);
+        contractExecutor(async () => {
             const hash = await writeContract(config, {
                 abi: multisigAbi,
                 address: multiSigAddress,
                 functionName: 'submitTransaction',
                 args: [multiSigAddress, 0, calldata]
             });
-            await waitForTransactionReceipt(config, {
-                hash
-            });
-            await refetch();
-
-            toast.update(toastId, {
-                render: 'Success',
-                type: 'success',
-                isLoading: false,
-                autoClose: 2000
-            })
-        } catch (e: any) {
-            toast.update(toastId, {
-                render: e.message.toString().slice(0, 150),
-                type: 'error',
-                isLoading: false,
-                autoClose: 2000
-            })
-        }
-
+            return hash;
+        });
     }
 
     return (
