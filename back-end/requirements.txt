@@ -1,0 +1,4 @@
+granian[reload]
+pymongo
+fastapi
+web3

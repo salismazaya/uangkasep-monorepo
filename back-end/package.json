@@ -1,23 +1,9 @@
 {
   "name": "back-end",
   "version": "1.0.0",
-  "main": "index.js",
-  "author": "salismazaya <salismazaya@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "dev": "nodemon cmd/index.js",
-    "start": "node cmd/index.js"
-  },
-  "dependencies": {
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "ethers": "6.2.3",
-    "express": "^4.21.1",
-    "mysql2": "^3.11.3",
-    "pusher": "^5.2.0",
-    "sequelize": "^6.37.4"
-  },
-  "devDependencies": {
-    "sqlite3": "^5.1.7"
+    "dev": "granian --interface asgi main:app --reload",
+    "start": "granian --interface asgi main:app"
   }
 }
