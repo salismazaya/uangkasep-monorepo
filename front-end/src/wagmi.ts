@@ -1,20 +1,23 @@
 import { createConfig, http } from 'wagmi'
 import {
   polygon,
+  holesky,
 } from 'wagmi/chains';
 import {
   metaMaskWallet,
   rabbyWallet,
+  phantomWallet,
   braveWallet,
-  walletConnectWallet
+  walletConnectWallet,
 } from "@rainbow-me/rainbowkit/wallets";
 import { connectorsForWallets } from "@rainbow-me/rainbowkit";
+import { isTestnet } from './variables';
 
 const connectors = connectorsForWallets(
   [
     {
       groupName: 'Recommended',
-      wallets: [metaMaskWallet, rabbyWallet, braveWallet, walletConnectWallet],
+      wallets: [metaMaskWallet, rabbyWallet, braveWallet, walletConnectWallet, phantomWallet],
     }
   ],
   {
@@ -24,9 +27,10 @@ const connectors = connectorsForWallets(
 )
 
 export const config = createConfig({
-  chains: [polygon],
+  chains: [isTestnet ? holesky : polygon],
   transports: {
-    [polygon.id]: http()
+    [polygon.id]: http(),
+    [holesky.id]: http(),
   },
   connectors,
   ssr: true

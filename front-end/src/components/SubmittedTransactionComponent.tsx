@@ -1,4 +1,4 @@
-import { publicChannel, register } from "../channels";
+import { ContractType, register } from "../helpers/realtime";
 import { useClientOnceOnly, useSubmittedTransactionCount } from "../hooks";
 
 export default () => {
@@ -6,9 +6,9 @@ export default () => {
 
     useClientOnceOnly(() => {
         register({
-            channel: publicChannel,
-            eventName: 'Submission',
-            callback: () => refetch()
+            contract: ContractType.MULTISIG,
+            abi: 'Submission(transactionId)',
+            callback: refetch,
         });
     });
 

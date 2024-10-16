@@ -9,13 +9,12 @@ contract ERC20 is IERC20 {
     mapping(address => mapping(address => uint256)) public allowance;
     string public name;
     string public symbol;
-    uint8 public decimals;
+    uint8 public decimals = 6;
 
-    constructor(string memory _name, string memory _symbol, uint8 _decimals) {
+    constructor(string memory _name, string memory _symbol, address _receiver) {
         name = _name;
         symbol = _symbol;
-        decimals = _decimals;
-        _mint(msg.sender, 100000000000000);
+        _mint(_receiver, 100000000000000);
     }
 
     function transfer(address recipient, uint256 amount)

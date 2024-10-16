@@ -11,15 +11,23 @@ module.exports = {
         version: "0.8.27",
       },
     ],
-    overrides: {
-      'contracts/MultiSigWallet.sol': {
-        version: "0.4.15"
-      }
-    }
+    // overrides: {
+    //   'contracts/MultiSigWallet.sol': {
+    //     version: "0.4.15"
+    //   }
+    // }
   },
   networks: {
     polygon: {
       url: 'https://polygon-rpc.com',
+      accounts: [process.env.PRIVATE_KEY]
+    },
+    holesky: {
+      url: 'https://1rpc.io/holesky',
+      accounts: [process.env.PRIVATE_KEY]
+    },
+    amoy: {
+      url: 'https://polygon-amoy.drpc.org',
       accounts: [process.env.PRIVATE_KEY]
     }
   },

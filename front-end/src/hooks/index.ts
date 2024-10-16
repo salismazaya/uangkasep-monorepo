@@ -6,6 +6,25 @@ import erc20Abi from "../abis/erc20.abi";
 import kasepAbi from "../abis/kasep.abi";
 import { useEffect, useState } from "react";
 
+export const useMultiSigPendingTransaction = () => {
+    const { data: transactionCount }: NumberInterface = useReadContract({
+        abi: multisigAbi,
+        address: multiSigAddress,
+        functionName: 'transactionCount'
+    });
+
+    const { data: ids, refetch }: ArrayBigIntInterface = useReadContract({
+        abi: multisigAbi,
+        address: multiSigAddress,
+        functionName: 'getTransactionIds',
+        args: [0, transactionCount, true, false]
+    });
+
+    return {
+        ids, refetch
+    }
+}
+
 export const useOwners = () => {
     const { data: owners, refetch }: OwnersInterface = useReadContract({
         abi: multisigAbi,
@@ -77,7 +96,7 @@ export const useIdrtBalance = (address: `0x${string}` | undefined) => {
         args: [address]
     });
 
-    return { idrtBalance: idrtBalance || 0 / (10 ** 6), refetch };
+    return { idrtBalance: ((BigInt(idrtBalance || 0) / BigInt(10 ** 6)) as unknown) as number || 0 / (10 ** 6), refetch };
 }
 
 interface ContractsInterface {
@@ -144,7 +163,7 @@ export const useClientOnceOnly = (callback: () => void) => {
 
     useEffect(() => {
         if (isClient) {
-            callback();    
+            callback();
         }
     }, [isClient]);
 }

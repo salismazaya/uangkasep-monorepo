@@ -1,8 +1,17 @@
-import { useExecutedTransactionCount } from "../hooks";
+import { ContractType, register } from "../helpers/realtime";
+import { useClientOnceOnly, useExecutedTransactionCount } from "../hooks";
 
 export default () => {
-    const { executedTransactionCount } = useExecutedTransactionCount();
+    const { executedTransactionCount, refetch } = useExecutedTransactionCount();
     
+    useClientOnceOnly(() => {
+        register({
+            contract: ContractType.MULTISIG,
+            abi: 'Execution(transactionId)',
+            callback: refetch,
+        });
+    });
+
     return (
         <>
             <div className="stats shadow">

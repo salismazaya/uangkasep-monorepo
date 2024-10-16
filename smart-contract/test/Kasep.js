@@ -10,7 +10,7 @@ describe("Kasep", function () {
         const multiSigWallet = await MultiSigWallet.deploy([account1, account2, account3], 2);
 
         const Idrt = await ethers.getContractFactory("ERC20");
-        const idrt = await Idrt.deploy("IDRT", "IDRT", 6);
+        const idrt = await Idrt.deploy("IDRT", "IDRT", account1);
 
         let amount = 1000000;
 
@@ -49,7 +49,7 @@ describe("Kasep", function () {
         const multiSigWallet = await MultiSigWallet.deploy([account1, account2, account3, account4], 2);
 
         const Idrt = await ethers.getContractFactory("ERC20");
-        const idrt = await Idrt.deploy("IDRT", "IDRT", 6);
+        const idrt = await Idrt.deploy("IDRT", "IDRT", account1);
 
         let amount = 1000000;
 

@@ -6,7 +6,7 @@ import { config } from "../wagmi";
 import multisigAbi from "../abis/multisig.abi";
 import { multiSigAddress } from "../variables";
 import { contractExecutor, contractInterface } from "../helpers/ethers";
-import { publicChannel, register } from "../channels";
+import { register, ContractType } from "../helpers/realtime";
 
 export default () => {
     const { votingRequired, refetch } = useVotingRequired();
@@ -20,8 +20,8 @@ export default () => {
 
     useClientOnceOnly(() => {
         register({
-            channel: publicChannel,
-            eventName: 'RequirementChange',
+            contract: ContractType.MULTISIG,
+            abi: 'RequirementChange(destination,value,data)',
             callback: () => refetch()
         });
     });

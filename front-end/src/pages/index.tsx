@@ -9,10 +9,11 @@ import VotingRequiredComponent from '../components/VotingRequiredComponent';
 import SubmittedTransactionComponent from '../components/SubmittedTransactionComponent';
 import PendingTransactionComponent from '../components/PendingTransactionComponent';
 import ExecutedTransactionComponent from '../components/ExecutedTransactionComponent';
+import HistoryTransactionComponent from '../components/HistoryTransactionComponent';
+import MyIdrtBalanceComponent from '../components/MyIdrtBalanceComponent';
 
 const Home = () => {
   const { address } = useAccount();
-  const { idrtBalance: myIdrtBalance } = useIdrtBalance(address);
   const { bill } = useGetBill(address);
 
   return (
@@ -30,14 +31,7 @@ const Home = () => {
           </div>
         </div>
 
-        <div className="stats shadow shadow-blue-300 w-full mt-3">
-          <div className="stat">
-            <div className="stat-title">Your IDRT Balance</div>
-            <div className="stat-value">
-              <FormatRupiah value={myIdrtBalance}></FormatRupiah>
-            </div>
-          </div>
-        </div>
+        <MyIdrtBalanceComponent></MyIdrtBalanceComponent>
       </div>
 
       <div className='grid grid-cols-2 lg:grid-cols-4 mt-3 gap-2'>
@@ -49,6 +43,9 @@ const Home = () => {
         <ExecutedTransactionComponent />
       </div>
 
+      <div className='mt-4'>
+        <HistoryTransactionComponent></HistoryTransactionComponent>
+      </div>
     </>
   )
 };

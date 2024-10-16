@@ -1,5 +1,5 @@
 import { lazy, Suspense, useState } from "react";
-import { useOwners } from "../hooks";
+import { useClientOnceOnly, useOwners } from "../hooks";
 import ModalComponent from "./ModalComponent";
 import { ethers } from "ethers";
 import { toast } from "react-toastify";
@@ -8,15 +8,29 @@ import { writeContract } from "@wagmi/core";
 import multisigAbi from "../abis/multisig.abi";
 import { multiSigAddress } from "../variables";
 import { config } from "../wagmi";
+import { register, ContractType } from "../helpers/realtime";
 
 const Content: any = lazy(() => import('./lazy/OwnersLazyComponent'));
 
 const OwnersComponent = () => {
-    const { owners } = useOwners();
+    const { owners, refetch } = useOwners();
     const [openModal, setOpenModal] = useState(false);
     const [openAddOwnerModal, setOpenAddOwnerModal] = useState(false);
     const [newOwnerAddress, setNewOwnerAddress] = useState<string | undefined>();
     const [showAddressInvalid, setShowAddressInvalid] = useState(false);
+
+    useClientOnceOnly(() => {
+        register({
+            contract: ContractType.MULTISIG,
+            abi: 'OwnerAddition(owner)',
+            callback: refetch
+        });
+        register({
+            contract: ContractType.MULTISIG,
+            abi: 'OwnerRemoval(owner)',
+            callback: refetch
+        });
+    });
 
     const executeAddOwner = () => {
         if (newOwnerAddress === "" || newOwnerAddress === undefined) {
@@ -31,7 +45,7 @@ const OwnersComponent = () => {
                 abi: multisigAbi,
                 address: multiSigAddress,
                 functionName: 'submitTransaction',
-                args: [multiSigAddress, 0, calldata]
+                args: [multiSigAddress, 0, calldata],
             });
 
             return hash;
