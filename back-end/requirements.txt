@@ -2,3 +2,4 @@ granian[reload]
 pymongo
 fastapi
 web3
+python-dotenv

@@ -1,0 +1,29 @@
+services:
+  backend:
+    build: back-end
+    ports:
+      - 8000:8000
+    volumes:
+      - ./back-end:/app
+  frontend:
+    build: front-end
+    ports:
+      - 3030:3000
+    volumes:
+      - ./front-end:/app
+  worker:
+    build: back-end
+    volumes:
+      - ./back-end:/app
+    command: nodemon worker.py
+  mongodb:
+    image: mongo:8-noble
+    volumes:
+      - uangkasepmongo:/data/db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=salism3
+      - MONGO_INITDB_ROOT_PASSWORD=sangatkasep
+    logging:
+      driver: none
+volumes:
+  uangkasepmongo:
