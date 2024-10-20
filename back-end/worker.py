@@ -1,146 +1,118 @@
-
 from dotenv import load_dotenv
 
 load_dotenv()
 
 from web3 import AsyncWeb3
-from abis.multisigAbi import multisigAbi
 from helpers.database import db, setup_database
 from datetime import datetime
-import asyncio, os
-
-w3 = AsyncWeb3(AsyncWeb3.AsyncHTTPProvider(os.environ['RPC_URL']))
-multisigContract = w3.eth.contract(os.environ['MULTISIG_ADDRESS'], abi = multisigAbi)
-
-semaphore = asyncio.Semaphore(10)
-semaphore_database = asyncio.Semaphore(15)
-
-async def execute_multisig_events(from_block, to_block):
-    kwargs = {
-        'from_block': from_block,
-        'to_block': to_block
-    }
-    
-    task_logs_submission = multisigContract.events.Submission().get_logs(**kwargs)
-    task_logs_confirmation = multisigContract.events.Confirmation().get_logs(**kwargs)
-    task_logs_revocation = multisigContract.events.Revocation().get_logs(**kwargs)
-    task_logs_execution = multisigContract.events.Execution().get_logs(**kwargs)
-    task_logs_execution_failure = multisigContract.events.ExecutionFailure().get_logs(**kwargs)
-    # task_logs_deposit = multisigContract.events.Deposit().get_logs(**kwargs)
-    # task_logs_owner_addition = multisigContract.events.OwnerAddition().get_logs(**kwargs)
-    # task_logs_owner_removal = multisigContract.events.OwnerRemoval().get_logs(**kwargs)
-    # task_logs_requirement_change = multisigContract.events.RequirementChange().get_logs(**kwargs)
-
-    async with semaphore:
-        logs_submission, logs_confirmation, logs_revocation, \
-        logs_execution, logs_execution_failure = await asyncio.gather(
-            task_logs_submission,
-            task_logs_confirmation,
-            task_logs_revocation,
-            task_logs_execution,
-            task_logs_execution_failure,
-        )
-    
-    # now = datetime.now()
-
-    # tasks = []
-    # submission_documents = []
-    # for log_submission in logs_submission:
-    #     submission_documents.append({
-    #         'transactionId': log_submission.args.transactionId,
-    #         'status': 'waiting',
-    #         'created': now,
-    #         'updated': now,
-    #     })
-    
-    # if submission_documents:
-    #     await db.get_collection('transactions').insert_many(submission_documents)
-        
-    # for log_confirmation in logs_confirmation:
-    #     document = {
-    #         'sender': log_confirmation.args.sender,
-    #         'transactionId': log_confirmation.args.transactionId,
-    #         'action': 'accept',
-    #         'created': now,
-    #         'updated': now,
-    #     }
-
-    #     async def create_task():
-    #         async with semaphore_database:
-    #             updated_count = await db.get_collection('transactions_action').find_one_and_update({
-    #                 'sender': log_confirmation.args.sender,
-    #                 'transactionId': log_confirmation.args.transactionId,
-    #             }, {
-    #                 'action': 'accept',
-    #                 'updated': now
-    #             })
-
-    #             if updated_count == 0:
-    #                 await db.get_collection('transactions_action').insert_one(document)
-
-    #     tasks.append(create_task())
-
-    # for log_revocation in logs_revocation:
-    #     document = {
-    #         'sender': log_revocation.args.sender,
-    #         'transactionId': log_revocation.args.transactionId,
-    #         'action': 'revoke',
-    #         'created': now,
-    #         'updated': now,
-    #     }
-        
-    #     async def create_task():
-    #        async with semaphore_database:
-    #             updated_count = await db.get_collection('transactions_action').find_one_and_update({
-    #                 'sender': log_revocation.args.sender,
-    #                 'transactionId': log_revocation.args.transactionId,
-    #             }, {
-    #                 'action': 'revoke',
-    #                 'updated': now
-    #             })
-
-    #             if updated_count == 0:
-    #                 await db.get_collection('transactions_action').insert_one(document)
-
-    #     tasks.append(create_task())
-
-    # for log_execution in logs_execution:
-    #     task = db.get_collection('transactions').find_one_and_update(
-    #         {'transactionId': log_execution.args.transactionId},
-    #         {'status': 'executed'}
-    #     )
-    #     tasks.append(task)
-
-    # for log_execution_failure in logs_execution_failure:
-    #     task = db.get_collection('transactions').find_one_and_update(
-    #         {'transactionId': log_execution_failure.args.transactionId},
-    #         {'status': 'failure'}
-    #     )
-    #     tasks.append(task)
-
-    # async with semaphore_database:
-    #     await asyncio.gather(*tasks)
+from eth_abi.abi import decode
+import asyncio, os, traceback
 
 async def main():
     await setup_database()
     data_collection = db.get_collection('data')
 
-    while True:
+    async with AsyncWeb3(AsyncWeb3.WebSocketProvider(os.environ['WSS_RPC_URL'])) as w3:
         raw_block_number = await data_collection.find_one({'key': 'block_number'})
         if raw_block_number is None:
-            async with semaphore:
-                from_block = await w3.eth.block_number
+            from_block = await w3.eth.block_number
         else:
             from_block = int(raw_block_number['value'])
+        
+        filter_params = {
+            'address': [os.environ['MULTISIG_ADDRESS']],
+            'fromBlock': from_block
+        }
 
-        async with semaphore:
-            to_block = await w3.eth.block_number
-
+        submission_hash = w3.keccak(text = "Submission(uint256)")
+        confirmation_hash = w3.keccak(text = "Confirmation(address,uint256)")
+        revocation_hash = w3.keccak(text = "Revocation(address,uint256)")
+        execution_hash = w3.keccak(text = "Execution(uint256)")
+        execution_failure_hash = w3.keccak(text = "ExecutionFailure(uint256)")
+        
         await asyncio.gather(
-            execute_multisig_events(from_block, to_block),
+            w3.eth.subscribe("newHeads"),
+            w3.eth.subscribe("logs", filter_params)
         )
 
-        await data_collection.find_one_and_replace({'key':'block_number'}, {'value': str(to_block)})
-        await asyncio.sleep(1)
+        async for payload in w3.socket.process_subscriptions():
+            now = datetime.now()
+            result = payload["result"]
+            if result.get('miner'): # check is log about new block
+                block_number = result['number']
+                if block_number.startswith('0x'):
+                    block_number = str(int(block_number, 16))
+                else:
+                    block_number = str(block_number)
+
+                await data_collection.find_one_and_replace({'key':'block_number'}, {'value': block_number})  
+                continue
+            
+            topics = result['topics']
+            event_hash = topics[0]
+            arguments = topics[1:]
+
+            try:
+                if event_hash == submission_hash:
+                    await db.get_collection('transactions').insert_one({
+                        'transactionId': decode(['uint256'], arguments[0])[0],
+                        'status': 'waiting',
+                        'created': now,
+                        'updated': None,
+                    })
+
+                elif event_hash == execution_hash:
+                    await db.get_collection('transactions').find_one_and_replace({
+                        'transactionId': decode(['uint256'], arguments[0])[0]
+                    }, {
+                        'updated': now,
+                        'status': 'executed'
+                    })
+
+                elif event_hash == execution_failure_hash:
+                    await db.get_collection('transactions').find_one_and_replace({
+                        'transactionId': decode(['uint256'], arguments[0])[0]
+                    }, {
+                        'updated': now,
+                        'status': 'failure'
+                    })
+
+                elif event_hash == confirmation_hash:
+                    is_updated = await db.get_collection('transactions_action').find_one_and_replace({
+                        'sender': decode(['address'], arguments[0])[0],
+                        'transactionId': decode(['uint256'], arguments[1])[0],
+                    }, {
+                        'updated': now,
+                        'status': 'accept',
+                    })
+
+                    if is_updated is None:
+                        await db.get_collection('transactions_action').insert_one({
+                            'sender': decode(['address'], arguments[0])[0],
+                            'transactionId': decode(['uint256'], arguments[1])[0],
+                            'status': 'accept',
+                            'created': now,
+                            'updated': None,
+                        })
+
+                elif event_hash == revocation_hash:
+                    is_updated = await db.get_collection('transactions_action').find_one_and_replace({
+                        'sender': decode(['address'], arguments[0])[0],
+                        'transactionId': decode(['uint256'], arguments[1])[0],
+                    }, {
+                        'updated': now,
+                        'status': 'revoke',
+                    })
+
+                    if is_updated is None:
+                        await db.get_collection('transactions_action').insert_one({
+                            'transactionId': decode(['uint256'], arguments[0])[0],
+                            'sender': decode(['address'], arguments[1])[0],
+                            'status': 'revoke',
+                            'created': now,
+                            'updated': None,
+                        })
+            except:
+                traceback.print_exc()
 
 asyncio.run(main())

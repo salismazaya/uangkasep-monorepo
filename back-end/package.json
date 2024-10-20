@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "license": "MIT",
   "scripts": {
-    "dev": "granian --interface asgi main:app --reload --host 0.0.0.0 --port 8000",
+    "dev": "granian --interface asgi main:app --reload --host 0.0.0.0 --port 8000 --reload-ignore-patterns worker.py ",
     "start": "granian --interface asgi main:app --host 0.0.0.0 --port 8000"
   }
 }
