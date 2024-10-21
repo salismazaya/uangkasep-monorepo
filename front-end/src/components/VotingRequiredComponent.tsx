@@ -5,10 +5,10 @@ import { useClientOnceOnly, useVotingRequired } from "../hooks"
 import ModalComponent from "./ModalComponent"
 import { writeContract } from "@wagmi/core"
 import config from "../wagmi"
-import multisigAbi from "../abis/multisig.abi"
-import { multiSigAddress } from "../variables"
 import { contractExecutor, contractInterface } from "../helpers/ethers"
 import { register, ContractType } from "../helpers/realtime"
+import kasepAbi from "@/abis/kasep.abi"
+import { kasepAddress } from "@/variables"
 
 export default () => {
     const { votingRequired, refetch } = useVotingRequired()
@@ -22,7 +22,7 @@ export default () => {
 
     useClientOnceOnly(() => {
         register({
-            contract: ContractType.MULTISIG,
+            contract: ContractType.KASEP,
             abi: 'RequirementChange(destination,value,data)',
             callback: () => refetch()
         })
@@ -32,10 +32,10 @@ export default () => {
         const calldata = contractInterface.encodeFunctionData("changeRequirement", [votingRequiredValue])
         contractExecutor(async () => {
             const hash = await writeContract(config, {
-                abi: multisigAbi,
-                address: multiSigAddress,
+                abi: kasepAbi,
+                address: kasepAddress,
                 functionName: 'submitTransaction',
-                args: [multiSigAddress, 0, calldata]
+                args: [kasepAddress, 0, calldata]
             })
             return hash
         })

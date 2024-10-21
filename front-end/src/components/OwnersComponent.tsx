@@ -7,10 +7,10 @@ import { ethers } from "ethers"
 import { toast } from "react-toastify"
 import { contractExecutor, contractInterface } from "../helpers/ethers"
 import { writeContract } from "@wagmi/core"
-import multisigAbi from "../abis/multisig.abi"
-import { multiSigAddress } from "../variables"
 import config from "../wagmi"
 import { register, ContractType } from "../helpers/realtime"
+import kasepAbi from "@/abis/kasep.abi"
+import { kasepAddress } from "@/variables"
 
 const Content: any = lazy(() => import('./lazy/OwnersLazyComponent'))
 
@@ -23,12 +23,12 @@ const OwnersComponent = () => {
 
     useClientOnceOnly(() => {
         register({
-            contract: ContractType.MULTISIG,
+            contract: ContractType.KASEP,
             abi: 'OwnerAddition(owner)',
             callback: refetch
         })
         register({
-            contract: ContractType.MULTISIG,
+            contract: ContractType.KASEP,
             abi: 'OwnerRemoval(owner)',
             callback: refetch
         })
@@ -44,10 +44,10 @@ const OwnersComponent = () => {
             const calldata = contractInterface.encodeFunctionData("addOwner", [newOwnerAddress])
 
             const hash = await writeContract(config, {
-                abi: multisigAbi,
-                address: multiSigAddress,
+                abi: kasepAbi,
+                address: kasepAddress,
                 functionName: 'submitTransaction',
-                args: [multiSigAddress, 0, calldata],
+                args: [kasepAddress, 0, calldata],
             })
 
             return hash

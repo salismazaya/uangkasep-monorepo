@@ -6,18 +6,162 @@ from pydantic import BaseModel
 from fastapi.security import APIKeyHeader
 from eth_account.messages import encode_defunct
 from helpers.database import db, setup_database
+from abis.kasepAbi import kasepAbi
 from datetime import datetime
-from web3 import Web3
-import asyncio
+from fastapi.middleware.cors import CORSMiddleware
+from web3 import AsyncWeb3
+import asyncio, os
 
-app = FastAPI()
+w3 = AsyncWeb3(AsyncWeb3.AsyncHTTPProvider(os.environ['RPC_URL']))
 
-w3 = Web3()
+kasep_contract = w3.eth.contract(os.environ['KASEP_ADDRESS'], abi = kasepAbi)
 
 api_key_scheme = APIKeyHeader(name = 'x-signature')
 expired_scheme = APIKeyHeader(name = 'x-expired')
 
 asyncio.run(setup_database())
+
+app = FastAPI()
+
+origins = os.environ['CORS_ORIGINS'].split(',')
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins = origins,
+    allow_credentials = True,
+    allow_methods = ['*'],
+    allow_headers = ['*'],
+)
+
+
+@app.get('/transactions')
+async def get_transactions():
+    owners = await kasep_contract.functions.getOwners().call()
+    required = await kasep_contract.functions.required().call()
+
+    owners_query = []
+
+    for owner in owners:
+        owners_query.append({'sender': w3.to_checksum_address(owner)})
+
+    result = []
+    async for transaction in db.get_collection('transactions').find({}, {'_id': False}).sort({'created': -1}):
+        total_accept = await db.get_collection('transactions_action').count_documents({
+            '$and': [
+                {'status': 'accept'},
+                {'transactionId': transaction['transactionId']},
+                {'$or': owners_query}
+            ]
+        })
+        total_reject = await db.get_collection('transactions_action').count_documents({
+            '$and': [
+                {'status': 'reject'},
+                {'transactionId': transaction['transactionId']},
+                {'$or': owners_query}
+            ]
+        })
+        total_pending = len(owners) - total_accept - total_reject
+        if total_pending < 0:
+            total_pending = 0
+
+        if transaction['status'] == 'executed' and required > total_accept:
+            required = total_accept
+
+        data = {}
+        data['transactionId'] = transaction['transactionId']
+        data['destination'] = transaction['destination']
+        data['value'] = transaction['value']
+        data['data'] = transaction['data']
+        data['total_accept'] = total_accept
+        data['total_reject'] = total_reject
+        data['total_pending'] = total_pending
+        data['total_accept_required'] = required
+        data['created'] = transaction['created']
+        data['status'] = transaction['status']
+        result.append(data)
+
+    return result
+
+
+@app.get('/transactions/{transaction_id}')
+async def get_transaction_detail(transaction_id: int, response: Response):
+    transaction = await db.get_collection('transactions').find_one({'transactionId': transaction_id})
+
+    if transaction is None:
+        response.status_code = 404
+        return {'status': 404, 'detail': 'Transaction not found'}
+
+    owners = await kasep_contract.functions.getOwners().call()
+    required = await kasep_contract.functions.required().call()
+
+    owners_query = []
+
+    accept_owners = []
+    reject_owners = []
+    pending_owners = []
+
+    for owner in owners:
+        owners_query.append({'sender': w3.to_checksum_address(owner)})
+
+    async for _transaction in db.get_collection('transactions_action').find({
+        '$and': [
+            {'status': 'accept'},
+            {'transactionId': transaction['transactionId']},
+            {'$or': owners_query}
+        ]
+    }, {'sender': True}):
+        accept_owners.append(_transaction['sender'])
+    
+    async for _transaction in db.get_collection('transactions_action').find({
+        '$and': [
+            {'status': 'reject'},
+            {'transactionId': transaction['transactionId']},
+            {'$or': owners_query}
+        ]
+    }, {'sender': True}):
+        reject_owners.append(_transaction['sender'])
+
+    total_accept = await db.get_collection('transactions_action').count_documents({
+        '$and': [
+            {'status': 'accept'},
+            {'transactionId': transaction['transactionId']},
+            {'$or': owners_query}
+        ]
+    })
+    total_reject = await db.get_collection('transactions_action').count_documents({
+        '$and': [
+            {'status': 'reject'},
+            {'transactionId': transaction['transactionId']},
+            {'$or': owners_query}
+        ]
+    })
+
+    accept_and_reject_owners = accept_owners + reject_owners
+    for _owner in owners:
+        if not _owner in accept_and_reject_owners:
+            pending_owners.append(_owner)
+
+    total_pending = len(owners) - total_accept - total_reject
+    if total_pending < 0:
+        total_pending = 0
+
+    data = {}
+    data['transactionId'] = transaction['transactionId']
+    data['destination'] = transaction['destination']
+    data['value'] = transaction['value']
+    data['data'] = transaction['data']
+    data['total_accept'] = total_accept
+    data['total_reject'] = total_reject
+    data['total_pending'] = total_pending
+    data['total_accept_required'] = required
+    data['created'] = transaction['created']
+    data['accept_owners'] = accept_owners
+    data['reject_owners'] = reject_owners
+    data['pending_owners'] = pending_owners
+    data['status'] = transaction['status']
+
+    return data
+
 
 @app.put('/transactions/{transactionId}/reject')
 async def reject_transaction(transactionId: int, response: Response, signature: str = Depends(api_key_scheme), expired: int = Depends(expired_scheme)):
@@ -36,12 +180,14 @@ async def reject_transaction(transactionId: int, response: Response, signature: 
             response.status_code = 404
             return {'status': 404, 'detail': 'Transaction Not Found'}
 
-        is_updated = await db.get_collection('transactions_action').find_one_and_replace({
+        is_updated = await db.get_collection('transactions_action').find_one_and_update({
             'sender': w3.to_checksum_address(signer),
             'transactionId': transactionId,
         }, {
-            'updated': now,
-            'status': 'reject',
+            '$set': {
+                'updated': now,
+                'status': 'reject',
+            }
         })
 
         if is_updated is None:

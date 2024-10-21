@@ -1,36 +1,14 @@
-'use client'
-
 import { useReadContract, useReadContracts } from "wagmi"
 import { IsOwnerInteface, OwnersInterface, NumberInterface, ArrayBigIntInterface } from "../interfaces"
-import multisigAbi from "../abis/multisig.abi"
-import { IdrtAddress, kasepAddress, multiSigAddress } from "../variables"
+import { IdrtAddress, kasepAddress } from "../variables"
 import erc20Abi from "../abis/erc20.abi"
 import kasepAbi from "../abis/kasep.abi"
 import { useEffect, useState } from "react"
 
-export const useMultiSigPendingTransaction = () => {
-    const { data: transactionCount }: NumberInterface = useReadContract({
-        abi: multisigAbi,
-        address: multiSigAddress,
-        functionName: 'transactionCount'
-    })
-
-    const { data: ids, refetch }: ArrayBigIntInterface = useReadContract({
-        abi: multisigAbi,
-        address: multiSigAddress,
-        functionName: 'getTransactionIds',
-        args: [0, transactionCount, true, false]
-    })
-
-    return {
-        ids, refetch
-    }
-}
-
 export const useOwners = () => {
     const { data: owners, refetch }: OwnersInterface = useReadContract({
-        abi: multisigAbi,
-        address: multiSigAddress,
+        abi: kasepAbi,
+        address: kasepAddress,
         functionName: 'getOwners'
     })
     return { owners, refetch }
@@ -38,8 +16,8 @@ export const useOwners = () => {
 
 export const useIsOwner = (address: `0x${string}` | undefined) => {
     const { data: isOwner, refetch }: IsOwnerInteface = useReadContract({
-        abi: multisigAbi,
-        address: multiSigAddress,
+        abi: kasepAbi,
+        address: kasepAddress,
         functionName: 'isOwner',
         args: [address]
     })
@@ -49,8 +27,8 @@ export const useIsOwner = (address: `0x${string}` | undefined) => {
 
 export const useVotingRequired = () => {
     const { data: votingRequired, refetch }: NumberInterface = useReadContract({
-        abi: multisigAbi,
-        address: multiSigAddress,
+        abi: kasepAbi,
+        address: kasepAddress,
         functionName: 'required',
     })
 
@@ -59,8 +37,8 @@ export const useVotingRequired = () => {
 
 export const useSubmittedTransactionCount = () => {
     const { data: transactionCount, refetch }: NumberInterface = useReadContract({
-        abi: multisigAbi,
-        address: multiSigAddress,
+        abi: kasepAbi,
+        address: kasepAddress,
         functionName: 'transactionCount',
     })
 
@@ -69,8 +47,8 @@ export const useSubmittedTransactionCount = () => {
 
 export const usePendingTransactionCount = () => {
     const { data: pendingTransactionCount, refetch }: NumberInterface = useReadContract({
-        abi: multisigAbi,
-        address: multiSigAddress,
+        abi: kasepAbi,
+        address: kasepAddress,
         functionName: 'getTransactionCount',
         args: [true, false]
     })
@@ -81,8 +59,8 @@ export const usePendingTransactionCount = () => {
 
 export const useExecutedTransactionCount = () => {
     const { data: executedTransactionCount, refetch }: NumberInterface = useReadContract({
-        abi: multisigAbi,
-        address: multiSigAddress,
+        abi: kasepAbi,
+        address: kasepAddress,
         functionName: 'getTransactionCount',
         args: [false, true]
     })

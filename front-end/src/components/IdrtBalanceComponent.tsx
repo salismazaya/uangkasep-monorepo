@@ -2,18 +2,18 @@
 
 import { FormatRupiah } from "@arismun/format-rupiah"
 import { useClientOnceOnly, useIdrtBalance } from "../hooks"
-import { multiSigAddress } from "../variables"
+import { kasepAddress } from "../variables"
 import { ContractType, register } from "../helpers/realtime"
 
 export default () => {
-    const { idrtBalance, refetch } = useIdrtBalance(multiSigAddress)
+    const { idrtBalance, refetch } = useIdrtBalance(kasepAddress)
 
     useClientOnceOnly(() => {
         register({
             contract: ContractType.IDRT,
             abi: 'Transfer(from,to,value)',
             callback: (from) => {
-                if (from == multiSigAddress) refetch()
+                if (from == kasepAddress) refetch()
             },
         })
     })

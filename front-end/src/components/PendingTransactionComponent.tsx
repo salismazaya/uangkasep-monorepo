@@ -1,3 +1,5 @@
+'use client'
+
 import { ContractType, register } from "../helpers/realtime"
 import { useClientOnceOnly, usePendingTransactionCount } from "../hooks"
 
@@ -6,7 +8,7 @@ export default () => {
 
     useClientOnceOnly(() => {
         register({
-            contract: ContractType.MULTISIG,
+            contract: ContractType.KASEP,
             abi: 'Submission(transactionId)',
             callback: refetch,
         })
