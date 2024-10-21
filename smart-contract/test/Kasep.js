@@ -61,8 +61,8 @@ describe("Kasep", function () {
 
         const twenty_days = 20 * 24 * 60 * 60;
 
-        await expect(kasepMultiSigWallet.changeAmountPerMonth(amount)).to.be.rejectedWith();
-        await expect(kasepMultiSigWallet.changePayInterval(twenty_days)).to.be.rejectedWith();
+        await expect(kasepMultiSigWallet.changeAmountPerMonth(amount)).to.be.revertedWith("KasepMultiSigWallet: SENDER IS NOT WALLET");
+        await expect(kasepMultiSigWallet.changePayInterval(twenty_days)).to.be.revertedWith("KasepMultiSigWallet: SENDER IS NOT WALLET");
 
         const kasepMultiSigInterface = new Interface([
             "function changeAmountPerMonth(uint256)",

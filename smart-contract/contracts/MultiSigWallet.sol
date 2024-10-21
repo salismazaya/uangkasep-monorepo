@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GNU GPL
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.20;
 
 // Fork from https://github.com/gnosis/MultiSigWallet/blob/master/contracts/MultiSigWallet.sol
 // This contract has not been fully tested
@@ -41,7 +41,7 @@ contract MultiSigWallet {
     /*
      *  Modifiers
      */
-    modifier onlyWallet() {
+    modifier onlyWallet() virtual {
         require(msg.sender == address(this));
         _;
     }
@@ -87,11 +87,11 @@ contract MultiSigWallet {
     }
 
     /// @dev Fallback function allows to deposit ether.
-    fallback() external payable {
+    fallback() external payable {}
+
+    receive() external payable {
         if (msg.value > 0) emit Deposit(msg.sender, msg.value);
     }
-
-    receive() external payable {}
 
     /*
      * Public functions
@@ -281,7 +281,9 @@ contract MultiSigWallet {
         uint256 value,
         bytes memory data
     ) internal returns (bool) {
-        (bool success, bytes memory output) = destination.call{value: value}(data);
+        (bool success, bytes memory output) = destination.call{value: value}(
+            data
+        );
         emit ExternalCallOutput(output);
         return success;
     }

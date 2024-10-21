@@ -6,9 +6,25 @@ import "./MultiSigWallet.sol";
 
 contract KasepMultiSigWallet is MultiSigWallet {
     uint256 public amountPerMonth;
-    IERC20 public idrt;
     uint256 public payInterval = 30 days;
     uint256 public created;
+    IERC20 idrt;
+
+    modifier onlyWallet() override {
+        require(
+            msg.sender == address(this),
+            "KasepMultiSigWallet: SENDER IS NOT WALLET"
+        );
+        _;
+    }
+
+    modifier onlyMultiSigOwner() {
+        require(
+            isOwner[msg.sender] == true,
+            "KasepMultiSigWallet: ONLY WORK WITH MULTISIG OWNER"
+        );
+        _;
+    }
 
     mapping(address => uint256) public lastUserPay;
 
@@ -44,22 +60,14 @@ contract KasepMultiSigWallet is MultiSigWallet {
         }
     }
 
-    modifier onlyMultiSigOwner() {
-        require(
-            isOwner[msg.sender] == true,
-            "KasepMultiSigWallet: ONLY WORK WITH MULTISIG OWNER"
-        );
-        _;
-    }
-
     // serves to cover monthly installment fees
     // This must be executed with a multisig contract and
     // of course must go through a voting process
     function changeAmountPerMonth(
-        uint256 _new_amountPerMonth
+        uint256 _newAmountPerMonth
     ) external onlyWallet {
         uint256 previousAmountPerMonth = amountPerMonth;
-        amountPerMonth = _new_amountPerMonth;
+        amountPerMonth = _newAmountPerMonth;
         emit AmountPerMonthChanged(
             msg.sender,
             previousAmountPerMonth,
@@ -70,9 +78,9 @@ contract KasepMultiSigWallet is MultiSigWallet {
     // how long does it take the owner to pay the monthly fee
     // This must be executed with a multisig contract and
     // of course must go through a voting process
-    function changePayInterval(uint256 _new_payInterval) external onlyWallet {
+    function changePayInterval(uint256 _newPayInterval) external onlyWallet {
         uint256 previousPayInterval = payInterval;
-        payInterval = _new_payInterval;
+        payInterval = _newPayInterval;
         emit AmountPerMonthChanged(
             msg.sender,
             previousPayInterval,
@@ -95,7 +103,7 @@ contract KasepMultiSigWallet is MultiSigWallet {
     // if owner not registered in multisig contract: return 0
     // if pay interval not reached: return 0
     // if new owner registered: lastUserPay = created 😱
-    function _getBill(address _address) internal view returns (uint256) {
+    function getBill(address _address) public view returns (uint256) {
         uint256 timestamp = block.timestamp;
         uint256 _lastUserPay = lastUserPay[_address];
 
@@ -116,16 +124,13 @@ contract KasepMultiSigWallet is MultiSigWallet {
         return result;
     }
 
-    function getBill(address _address) external view returns (uint256) {
-        return _getBill(_address);
-    }
 
     // only registered owner can execute this function
     // this function call _getBill for billing information
     // owner must approve idrt for this contract
     // error if time not reached
     function payBill() external onlyMultiSigOwner {
-        uint256 amount = _getBill(msg.sender);
+        uint256 amount = getBill(msg.sender);
         require(amount > 0, "KasepMultiSigWallet: NOT TIME YET");
 
         require(
