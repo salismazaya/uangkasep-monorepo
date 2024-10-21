@@ -25,5 +25,7 @@ services:
       - MONGO_INITDB_ROOT_PASSWORD=sangatkasep
     logging:
       driver: none
+  redis:
+    image: redis:7.4.1-alpine3.20
 volumes:
   uangkasepmongo:

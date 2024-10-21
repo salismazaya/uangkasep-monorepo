@@ -1,5 +1,7 @@
 granian[reload]
 pymongo
-fastapi
-web3
+fastapi==0.115.2
+web3==6.*
 python-dotenv
+redis
+fastapi-limiter

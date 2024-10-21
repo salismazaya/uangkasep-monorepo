@@ -14,7 +14,7 @@ contract MultiSigWallet {
     event Revocation(address indexed sender, uint256 indexed transactionId);
     event Submission(uint256 indexed transactionId);
     event Execution(uint256 indexed transactionId);
-    event ExternalCallOutput(bytes output);
+    event ExternalCallOutput(uint256 value, bytes data, bytes output);
     event ExecutionFailure(uint256 indexed transactionId);
     event Deposit(address indexed sender, uint256 value);
     event OwnerAddition(address indexed owner);
@@ -36,6 +36,11 @@ contract MultiSigWallet {
         uint256 value;
         bytes data;
         bool executed;
+    }
+
+    struct ExternalCall {
+        bool success;
+        bytes output;
     }
 
     /*
@@ -284,7 +289,7 @@ contract MultiSigWallet {
         (bool success, bytes memory output) = destination.call{value: value}(
             data
         );
-        emit ExternalCallOutput(output);
+        emit ExternalCallOutput(value, data, output);
         return success;
     }
 

@@ -27,7 +27,7 @@ module.exports = {
       accounts: [process.env.PRIVATE_KEY]
     },
     amoy: {
-      url: 'https://polygon-amoy.drpc.org',
+      url: 'https://polygon-amoy.gateway.tenderly.co',
       accounts: [process.env.PRIVATE_KEY]
     }
   },

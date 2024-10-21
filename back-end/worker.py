@@ -3,29 +3,44 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from web3 import AsyncWeb3
+from web3.main import _PersistentConnectionWeb3
+from web3.middleware.geth_poa import async_geth_poa_middleware
+from web3.providers import WebsocketProviderV2
 from helpers.database import db, setup_database
 from datetime import datetime
 from eth_abi.abi import decode
 from abis.kasepAbi import kasepAbi
 import asyncio, os, traceback
 
-async def main():
-    await setup_database()
+async def generator(w3: _PersistentConnectionWeb3):
     data_collection = db.get_collection('data')
 
-    async with AsyncWeb3(AsyncWeb3.WebSocketProvider(os.environ['WSS_RPC_URL'])) as w3:
-        kasep_contract = w3.eth.contract(os.environ['KASEP_ADDRESS'], abi = kasepAbi)
+    raw_block_number = await data_collection.find_one({'key': 'block_number'})
+    if raw_block_number is None:
+        from_block = await w3.eth.block_number
+    else:
+        from_block = int(raw_block_number['value'])
 
-        raw_block_number = await data_collection.find_one({'key': 'block_number'})
-        if raw_block_number is None:
-            from_block = await w3.eth.block_number
-        else:
-            from_block = int(raw_block_number['value'])
-        
-        filter_params = {
-            'address': [os.environ['KASEP_ADDRESS']],
-            'fromBlock': from_block
-        }
+    filter_params = {
+        'address': [os.environ['KASEP_ADDRESS']],
+        'fromBlock': hex(from_block)
+    }
+    
+    await asyncio.gather(
+        w3.eth.subscribe('newHeads'),
+        w3.eth.subscribe("logs", filter_params)
+    )
+
+    async for response in w3.ws.process_subscriptions():
+        yield response
+
+async def main():
+    await setup_database()
+
+    async with AsyncWeb3.persistent_websocket(WebsocketProviderV2(os.environ['WSS_RPC_URL'])) as w3:
+        w3.middleware_onion.inject(async_geth_poa_middleware, layer = 0)
+        kasep_contract = w3.eth.contract(os.environ['KASEP_ADDRESS'], abi = kasepAbi)
+        data_collection = db.get_collection('data')
 
         submission_hash = w3.keccak(text = "Submission(uint256)")
         confirmation_hash = w3.keccak(text = "Confirmation(address,uint256)")
@@ -33,12 +48,7 @@ async def main():
         execution_hash = w3.keccak(text = "Execution(uint256)")
         execution_failure_hash = w3.keccak(text = "ExecutionFailure(uint256)")
         
-        await asyncio.gather(
-            w3.eth.subscribe("newHeads"),
-            w3.eth.subscribe("logs", filter_params)
-        )
-
-        async for payload in w3.socket.process_subscriptions():
+        async for payload in generator(w3):
             now = datetime.now()
             result = payload["result"]
             if result.get('miner'): # check is log about new block

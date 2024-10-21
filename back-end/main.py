@@ -1,7 +1,9 @@
 from dotenv import load_dotenv
 load_dotenv()
 
-from fastapi import FastAPI, Depends, Response
+from fastapi import FastAPI, Depends, Response, Request
+from fastapi_limiter import FastAPILimiter
+from fastapi_limiter.depends import RateLimiter
 from pydantic import BaseModel
 from fastapi.security import APIKeyHeader
 from eth_account.messages import encode_defunct
@@ -9,8 +11,11 @@ from helpers.database import db, setup_database
 from abis.kasepAbi import kasepAbi
 from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
+from redis.asyncio import Redis
 from web3 import AsyncWeb3
-import asyncio, os
+import os
+
+r = Redis.from_url(os.environ['REDIS_URL'])
 
 w3 = AsyncWeb3(AsyncWeb3.AsyncHTTPProvider(os.environ['RPC_URL']))
 
@@ -19,22 +24,30 @@ kasep_contract = w3.eth.contract(os.environ['KASEP_ADDRESS'], abi = kasepAbi)
 api_key_scheme = APIKeyHeader(name = 'x-signature')
 expired_scheme = APIKeyHeader(name = 'x-expired')
 
-asyncio.run(setup_database())
-
 app = FastAPI()
+
+@app.on_event('startup')
+async def setup():
+    await setup_database()
+    redis_connection = Redis.from_url(os.environ['REDIS_URL'], encoding = 'utf-8', decode_responses = True)
+    await FastAPILimiter.init(redis_connection)
 
 origins = os.environ['CORS_ORIGINS'].split(',')
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins = origins,
-    allow_credentials = True,
     allow_methods = ['*'],
     allow_headers = ['*'],
 )
 
+async def ip_identifier(request: Request):
+    real_ip = request.headers.get('X-Real-IP')
+    return real_ip
 
-@app.get('/transactions')
+dependencies = [Depends(RateLimiter(times = 30, seconds = 60, identifier = ip_identifier))]
+
+@app.get('/transactions', dependencies = dependencies)
 async def get_transactions():
     owners = await kasep_contract.functions.getOwners().call()
     required = await kasep_contract.functions.required().call()
@@ -45,7 +58,11 @@ async def get_transactions():
         owners_query.append({'sender': w3.to_checksum_address(owner)})
 
     result = []
-    async for transaction in db.get_collection('transactions').find({}, {'_id': False}).sort({'created': -1}):
+    
+    async for transaction in db.get_collection('transactions')\
+        .find({}, {'_id': False})\
+        .sort({'created': -1}):
+
         total_accept = await db.get_collection('transactions_action').count_documents({
             '$and': [
                 {'status': 'accept'},
@@ -83,7 +100,7 @@ async def get_transactions():
     return result
 
 
-@app.get('/transactions/{transaction_id}')
+@app.get('/transactions/{transaction_id}', dependencies = dependencies)
 async def get_transaction_detail(transaction_id: int, response: Response):
     transaction = await db.get_collection('transactions').find_one({'transactionId': transaction_id})
 

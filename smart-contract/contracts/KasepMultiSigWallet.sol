@@ -1,19 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import "./IERC20.sol";
 import "./MultiSigWallet.sol";
 
 contract KasepMultiSigWallet is MultiSigWallet {
     uint256 public amountPerMonth;
     uint256 public payInterval = 30 days;
     uint256 public created;
-    IERC20 idrt;
+    address public idrt;
 
     modifier onlyWallet() override {
         require(
             msg.sender == address(this),
-            "KasepMultiSigWallet: SENDER IS NOT WALLET"
+            "KasepMultiSigWallet: ONLY MYSELF CAN EXECUTE"
         );
         _;
     }
@@ -48,7 +47,7 @@ contract KasepMultiSigWallet is MultiSigWallet {
         uint256 _amountPerMonth
     ) MultiSigWallet(_owners, _required) {
         amountPerMonth = _amountPerMonth;
-        idrt = IERC20(_idrt);
+        idrt = _idrt;
         created = block.timestamp;
 
         // all owners in multisig wallet set to currentTimestamp - payInterval
@@ -124,7 +123,6 @@ contract KasepMultiSigWallet is MultiSigWallet {
         return result;
     }
 
-
     // only registered owner can execute this function
     // this function call _getBill for billing information
     // owner must approve idrt for this contract
@@ -133,10 +131,16 @@ contract KasepMultiSigWallet is MultiSigWallet {
         uint256 amount = getBill(msg.sender);
         require(amount > 0, "KasepMultiSigWallet: NOT TIME YET");
 
-        require(
-            idrt.transferFrom(msg.sender, address(this), amount),
-            "KasepMultiSigWallet: TRANSFER IDRT FAILED"
+        bytes memory data = abi.encodeWithSignature(
+            "transferFrom(address,address,uint256)",
+            msg.sender,
+            address(this),
+            amount
         );
+
+        bool success = external_call(idrt, 0, data);
+
+        require(success, "KasepMultiSigWallet: TRANSFER IDRT FAILED");
 
         lastUserPay[msg.sender] = block.timestamp;
         emit BillPaid(msg.sender, address(this), amount);
