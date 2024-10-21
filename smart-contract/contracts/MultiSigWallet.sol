@@ -10,34 +10,30 @@ contract MultiSigWallet {
     /*
      *  Events
      */
-    event Confirmation(address indexed sender, uint indexed transactionId);
-    event Revocation(address indexed sender, uint indexed transactionId);
-    event Submission(uint indexed transactionId);
-    event Execution(uint indexed transactionId);
-    event ExecutionFailure(uint indexed transactionId);
-    event Deposit(address indexed sender, uint value);
+    event Confirmation(address indexed sender, uint256 indexed transactionId);
+    event Revocation(address indexed sender, uint256 indexed transactionId);
+    event Submission(uint256 indexed transactionId);
+    event Execution(uint256 indexed transactionId);
+    event ExternalCallOutput(bytes output);
+    event ExecutionFailure(uint256 indexed transactionId);
+    event Deposit(address indexed sender, uint256 value);
     event OwnerAddition(address indexed owner);
     event OwnerRemoval(address indexed owner);
-    event RequirementChange(uint required);
-
-    /*
-     *  Constants
-     */
-    uint public constant MAX_OWNER_COUNT = 50;
+    event RequirementChange(uint256 required);
 
     /*
      *  Storage
      */
-    mapping(uint => Transaction) public transactions;
-    mapping(uint => mapping(address => bool)) public confirmations;
+    mapping(uint256 => Transaction) public transactions;
+    mapping(uint256 => mapping(address => bool)) public confirmations;
     mapping(address => bool) public isOwner;
     address[] public owners;
-    uint public required;
-    uint public transactionCount;
+    uint256 public required;
+    uint256 public transactionCount;
 
     struct Transaction {
         address destination;
-        uint value;
+        uint256 value;
         bytes data;
         bool executed;
     }
@@ -86,12 +82,7 @@ contract MultiSigWallet {
     }
 
     modifier validRequirement(uint ownerCount, uint _required) {
-        require(
-            ownerCount <= MAX_OWNER_COUNT &&
-                _required <= ownerCount &&
-                _required != 0 &&
-                ownerCount != 0
-        );
+        require(_required <= ownerCount && _required != 0 && ownerCount != 0);
         _;
     }
 
@@ -110,7 +101,7 @@ contract MultiSigWallet {
     /// @param _required Number of required confirmations.
     function _MultiSigWallet(
         address[] memory _owners,
-        uint _required
+        uint256 _required
     ) private validRequirement(_owners.length, _required) {
         for (uint i = 0; i < _owners.length; i++) {
             require(!isOwner[_owners[i]] && _owners[i] != address(0));
@@ -120,7 +111,7 @@ contract MultiSigWallet {
         required = _required;
     }
 
-    constructor(address[] memory _owners, uint _required) {
+    constructor(address[] memory _owners, uint256 _required) {
         _MultiSigWallet(_owners, _required);
     }
 
@@ -175,7 +166,7 @@ contract MultiSigWallet {
     /// @dev Allows to change the number of required confirmations. Transaction has to be sent by wallet.
     /// @param _required Number of required confirmations.
     function changeRequirement(
-        uint _required
+        uint256 _required
     ) public onlyWallet validRequirement(owners.length, _required) {
         required = _required;
         emit RequirementChange(_required);
@@ -188,10 +179,10 @@ contract MultiSigWallet {
     /// @return Returns transaction ID.
     function submitTransaction(
         address destination,
-        uint value,
+        uint256 value,
         bytes memory data
-    ) public returns (uint) {
-        uint transactionId = addTransaction(destination, value, data);
+    ) public returns (uint256) {
+        uint256 transactionId = addTransaction(destination, value, data);
         confirmTransaction(transactionId);
         return transactionId;
     }
@@ -199,7 +190,7 @@ contract MultiSigWallet {
     /// @dev Allows an owner to confirm a transaction.
     /// @param transactionId Transaction ID.
     function confirmTransaction(
-        uint transactionId
+        uint256 transactionId
     )
         public
         ownerExists(msg.sender)
@@ -214,7 +205,7 @@ contract MultiSigWallet {
     /// @dev Allows an owner to revoke a confirmation for a transaction.
     /// @param transactionId Transaction ID.
     function revokeConfirmation(
-        uint transactionId
+        uint256 transactionId
     )
         public
         ownerExists(msg.sender)
@@ -228,10 +219,9 @@ contract MultiSigWallet {
     /// @dev Allows anyone to execute a confirmed transaction.
     /// @param transactionId Transaction ID.
     function executeTransaction(
-        uint transactionId
+        uint256 transactionId
     )
         public
-        virtual
         ownerExists(msg.sender)
         confirmed(transactionId, msg.sender)
         notExecuted(transactionId)
@@ -239,14 +229,8 @@ contract MultiSigWallet {
         if (isConfirmed(transactionId)) {
             Transaction storage txn = transactions[transactionId];
             txn.executed = true;
-            if (
-                external_call(
-                    txn.destination,
-                    txn.value,
-                    txn.data.length,
-                    txn.data
-                )
-            ) emit Execution(transactionId);
+            if (external_call(txn.destination, txn.value, txn.data))
+                emit Execution(transactionId);
             else {
                 emit ExecutionFailure(transactionId);
                 txn.executed = false;
@@ -254,39 +238,12 @@ contract MultiSigWallet {
         }
     }
 
-    // call has been separated into its own function in order to take advantage
-    // of the Solidity's code generator to produce a loop that copies tx.data into memory.
-    function external_call(
-        address destination,
-        uint value,
-        uint,
-        bytes memory data
-    ) internal returns (bool) {
-        // assembly {
-        //     let x := mload(0x40)   // "Allocate" memory for output (0x40 is where "free memory" pointer is stored by convention)
-        //     let d := add(data, 32) // First 32 bytes are the padded length of data, so exclude that
-        //     result := call(
-        //         sub(gas, 34710),   // 34710 is the value that solidity is currently emitting
-        //                            // It includes callGas (700) + callVeryLow (3, to pay for SUB) + callValueTransferGas (9000) +
-        //                            // callNewAccountGas (25000, in case the destination address does not exist and needs creating)
-        //         destination,
-        //         value,
-        //         d,
-        //         dataLength,        // Size of the input (in bytes) - this is what fixes the padding problem
-        //         x,
-        //         0                  // Output is ignored, therefore the output size is zero
-        //     )
-        // }
-        (bool success, ) = destination.call{value: value}(data);
-        return success;
-    }
-
     /// @dev Returns the confirmation status of a transaction.
     /// @param transactionId Transaction ID.
     /// @return Confirmation status.
-    function isConfirmed(uint transactionId) public view returns (bool) {
-        uint count = 0;
-        for (uint i = 0; i < owners.length; i++) {
+    function isConfirmed(uint256 transactionId) public view returns (bool) {
+        uint256 count = 0;
+        for (uint256 i = 0; i < owners.length; i++) {
             if (confirmations[transactionId][owners[i]]) count += 1;
             if (count == required) return true;
         }
@@ -304,10 +261,10 @@ contract MultiSigWallet {
     /// @return Returns transaction ID.
     function addTransaction(
         address destination,
-        uint value,
+        uint256 value,
         bytes memory data
-    ) internal notNull(destination) returns (uint) {
-        uint transactionId = transactionCount;
+    ) internal notNull(destination) returns (uint256) {
+        uint256 transactionId = transactionCount;
         transactions[transactionId] = Transaction({
             destination: destination,
             value: value,
@@ -319,6 +276,16 @@ contract MultiSigWallet {
         return transactionId;
     }
 
+    function external_call(
+        address destination,
+        uint256 value,
+        bytes memory data
+    ) internal returns (bool) {
+        (bool success, bytes memory output) = destination.call{value: value}(data);
+        emit ExternalCallOutput(output);
+        return success;
+    }
+
     /*
      * Web3 call functions
      */
@@ -326,10 +293,10 @@ contract MultiSigWallet {
     /// @param transactionId Transaction ID.
     /// @return Number of confirmations.
     function getConfirmationCount(
-        uint transactionId
-    ) public view returns (uint) {
-        uint count = 0;
-        for (uint i = 0; i < owners.length; i++)
+        uint256 transactionId
+    ) public view returns (uint256) {
+        uint256 count = 0;
+        for (uint256 i = 0; i < owners.length; i++)
             if (confirmations[transactionId][owners[i]]) count += 1;
         return count;
     }
@@ -342,8 +309,8 @@ contract MultiSigWallet {
         bool pending,
         bool executed
     ) public view returns (uint) {
-        uint count = 0;
-        for (uint i = 0; i < transactionCount; i++)
+        uint256 count = 0;
+        for (uint256 i = 0; i < transactionCount; i++)
             if (
                 (pending && !transactions[i].executed) ||
                 (executed && transactions[i].executed)
@@ -365,8 +332,8 @@ contract MultiSigWallet {
     ) public view returns (address[] memory) {
         address[] memory _confirmations;
         address[] memory confirmationsTemp = new address[](owners.length);
-        uint count = 0;
-        uint i;
+        uint256 count = 0;
+        uint256 i;
         for (i = 0; i < owners.length; i++)
             if (confirmations[transactionId][owners[i]]) {
                 confirmationsTemp[count] = owners[i];
@@ -389,9 +356,9 @@ contract MultiSigWallet {
         bool pending,
         bool executed
     ) public view returns (uint[] memory) {
-        uint[] memory transactionIdsTemp = new uint[](transactionCount);
-        uint count = 0;
-        uint i;
+        uint256[] memory transactionIdsTemp = new uint[](transactionCount);
+        uint256 count = 0;
+        uint256 i;
         for (i = 0; i < transactionCount; i++)
             if (
                 (pending && !transactions[i].executed) ||

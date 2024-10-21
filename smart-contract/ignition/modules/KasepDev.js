@@ -3,9 +3,9 @@ const { kasep } = require('./Kasep');
 
 module.exports = buildModule("KasepDev", (m) => {
     const erc20 = m.contract("ERC20", [
-        "Salis Token",
-        "STK",
+        "Kasep Token",
+        "KTOKEN",
         process.env.OWNER,
     ]);
-    return { erc20, ...kasep(m, process.env.IDRT_ADDRESS) };
+    return { erc20, ...kasep(m, erc20) };
 });

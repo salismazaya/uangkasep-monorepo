@@ -2,16 +2,14 @@
 pragma solidity ^0.8.27;
 
 import "./IERC20.sol";
-import "./IMultiSigWallet.sol";
+import "./MultiSigWallet.sol";
 
-contract KasepMultiSigWallet {
-    address public multisig;
-    IMultiSigWallet multisigContract;
+contract KasepMultiSigWallet is MultiSigWallet {
     uint256 public amountPerMonth;
     IERC20 public idrt;
     uint256 public payInterval = 30 days;
     uint256 public created;
-    
+
     mapping(address => uint256) public lastUserPay;
 
     event AmountPerMonthChanged(
@@ -27,76 +25,66 @@ contract KasepMultiSigWallet {
     event BillPaid(address indexed owner, address to, uint256 amount);
     event Checkpoint(address[] addressed);
 
-    constructor(address _multisig, address _idrt, uint256 _amountPerMonth) {
-        multisig = _multisig;
-        multisigContract = IMultiSigWallet(_multisig);
+    constructor(
+        address[] memory _owners,
+        uint256 _required,
+        address _idrt,
+        uint256 _amountPerMonth
+    ) MultiSigWallet(_owners, _required) {
         amountPerMonth = _amountPerMonth;
         idrt = IERC20(_idrt);
         created = block.timestamp;
 
         // all owners in multisig wallet set to currentTimestamp - payInterval
         // As a result, the owners have to pay the bill (in this case the owners have 1 month's bill)
-        address[] memory owners = multisigContract.getOwners();
+        address[] memory owners = getOwners();
         for (uint8 i = 0; i < owners.length; i++) {
             address owner = owners[i];
             lastUserPay[owner] = block.timestamp - payInterval;
         }
     }
 
-    modifier onlyMultiSig() {
-        require(
-            msg.sender == multisig,
-            "KasepMultiSigWallet: ONLY WORK WITH MULTISIG CONTRACT"
-        );
-        _;
-    }
-
     modifier onlyMultiSigOwner() {
         require(
-            multisigContract.isOwner(msg.sender),
+            isOwner[msg.sender] == true,
             "KasepMultiSigWallet: ONLY WORK WITH MULTISIG OWNER"
         );
         _;
     }
 
-
     // serves to cover monthly installment fees
-    // This must be executed with a multisig contract and 
+    // This must be executed with a multisig contract and
     // of course must go through a voting process
     function changeAmountPerMonth(
         uint256 _new_amountPerMonth
-    ) external onlyMultiSig {
-        uint256 previous_amountPerMonth = amountPerMonth;
+    ) external onlyWallet {
+        uint256 previousAmountPerMonth = amountPerMonth;
         amountPerMonth = _new_amountPerMonth;
         emit AmountPerMonthChanged(
             msg.sender,
-            previous_amountPerMonth,
+            previousAmountPerMonth,
             amountPerMonth
         );
     }
 
     // how long does it take the owner to pay the monthly fee
-    // This must be executed with a multisig contract and 
+    // This must be executed with a multisig contract and
     // of course must go through a voting process
-    function changePayInterval(
-        uint256 _new_payInterval
-    ) external onlyMultiSig {
-        uint256 previous_payInterval = payInterval;
+    function changePayInterval(uint256 _new_payInterval) external onlyWallet {
+        uint256 previousPayInterval = payInterval;
         payInterval = _new_payInterval;
         emit AmountPerMonthChanged(
             msg.sender,
-            previous_payInterval,
+            previousPayInterval,
             payInterval
         );
     }
 
     // If you add a new user, that user must pay the fee from the contract first created
     // if you don't want, use this function
-    // This must be executed with a multisig contract and 
+    // This must be executed with a multisig contract and
     // of course must go through a voting process
-    function checkpoint(
-        address[] memory _addresses
-    ) external onlyMultiSig {
+    function checkpoint(address[] memory _addresses) external onlyWallet {
         for (uint i = 0; i < _addresses.length; i++) {
             address _address = _addresses[i];
             lastUserPay[_address] = block.timestamp;
@@ -111,7 +99,7 @@ contract KasepMultiSigWallet {
         uint256 timestamp = block.timestamp;
         uint256 _lastUserPay = lastUserPay[_address];
 
-        if (!multisigContract.isOwner(_address)) {
+        if (isOwner[_address] != true) {
             return 0;
         }
 
@@ -141,11 +129,11 @@ contract KasepMultiSigWallet {
         require(amount > 0, "KasepMultiSigWallet: NOT TIME YET");
 
         require(
-            idrt.transferFrom(msg.sender, multisig, amount),
+            idrt.transferFrom(msg.sender, address(this), amount),
             "KasepMultiSigWallet: TRANSFER IDRT FAILED"
         );
 
         lastUserPay[msg.sender] = block.timestamp;
-        emit BillPaid(msg.sender, multisig, amount);
+        emit BillPaid(msg.sender, address(this), amount);
     }
 }

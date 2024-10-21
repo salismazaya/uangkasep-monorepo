@@ -9,21 +9,17 @@ const kasep = (m, inputIdrt) => {
 
   const owners = m.getParameter('_owners', inputOwners.split(','));
   const required = m.getParameter('_required', inputRequired);
-  const multisig = m.contract("MultiSigWallet", [
-    owners,
-    required
-  ]);
 
-  const idrt = m.getParameter('_idrt', inputIdrt);
   const amount = m.getParameter('_amountPerMonth', inputAmount);
 
   const kasepmultisig = m.contract("KasepMultiSigWallet", [
-    multisig,
-    idrt,
+    owners,
+    required,
+    inputIdrt,
     amount
   ]);
 
-  return { multisig, kasepmultisig };
+  return { kasepmultisig };
 }
 
 module.exports = {
