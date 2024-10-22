@@ -5,6 +5,16 @@ import erc20Abi from "../abis/erc20.abi"
 import kasepAbi from "../abis/kasep.abi"
 import { useEffect, useState } from "react"
 
+export const useTransaction = (transactionId: bigint) => {
+    const { data: transaction, refetch }: { data: any, refetch: any } = useReadContract({
+        abi: kasepAbi,
+        address: kasepAddress,
+        functionName: 'transactions',
+        args: [transactionId]
+    })
+    return { transaction, refetch }
+}
+
 export const useOwners = () => {
     const { data: owners, refetch }: OwnersInterface = useReadContract({
         abi: kasepAbi,

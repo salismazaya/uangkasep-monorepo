@@ -2,7 +2,6 @@
 
 import { ContractType, register } from "@/helpers/realtime"
 import { useClientOnceOnly } from "@/hooks"
-import axios from "axios"
 import Link from "next/link"
 import { useState } from "react"
 
@@ -10,8 +9,10 @@ export default () => {
     const [transactions, setTransactions] = useState<any[]>()
 
     const execute = () => {
-        axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}transactions`).then(response => {
-            setTransactions(response.data)
+        fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}transactions`).then(response => {
+            response.json().then(transactions => {
+                setTransactions(transactions)
+            })
         })
     }
 
@@ -88,7 +89,7 @@ export default () => {
                                 </td>
                                 <td>
                                     <center>
-                                        <Link className="btn btn-info text-white font-bold" href={"/transaction/" + transaction.transactionId}>Detail</Link>
+                                        <Link className="btn btn-info font-bold" href={"/transaction/" + transaction.transactionId}>Detail</Link>
                                     </center>
                                 </td>
                             </tr>

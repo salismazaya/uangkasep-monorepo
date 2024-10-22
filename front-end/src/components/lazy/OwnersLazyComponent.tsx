@@ -11,7 +11,7 @@ export default ({ hook }: { hook: (active: boolean) => void}) => {
         <>
             <div className='mt-4'>
                 <div>
-                    <button className="btn btn-success text-white mb-3" onClick={() => hook(true) } >Add Owner</button>
+                    <button className="btn btn-success mb-3" onClick={() => hook(true) } >Add Owner</button>
                     <table className="table table-fixed">
                         <thead>
                             <tr>

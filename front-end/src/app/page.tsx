@@ -12,6 +12,7 @@ import ExecutedTransactionComponent from '../components/ExecutedTransactionCompo
 import HistoryTransactionComponent from '../components/HistoryTransactionComponent';
 import MyIdrtBalanceComponent from '../components/MyIdrtBalanceComponent';
 
+
 const Home = () => {
   const { address } = useAccount();
   const { bill } = useGetBill(address);
