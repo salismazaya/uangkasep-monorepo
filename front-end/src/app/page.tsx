@@ -1,21 +1,75 @@
 'use client'
 
-import { FormatRupiah } from '@arismun/format-rupiah';
-import { useGetBill } from '../hooks';
-import { useAccount } from 'wagmi';
-import OwnersComponent from '../components/OwnersComponent';
-import IdrtBalanceComponent from '../components/IdrtBalanceComponent';
-import VotingRequiredComponent from '../components/VotingRequiredComponent';
-import SubmittedTransactionComponent from '../components/SubmittedTransactionComponent';
-import PendingTransactionComponent from '../components/PendingTransactionComponent';
-import ExecutedTransactionComponent from '../components/ExecutedTransactionComponent';
-import HistoryTransactionComponent from '../components/HistoryTransactionComponent';
-import MyIdrtBalanceComponent from '../components/MyIdrtBalanceComponent';
+import { FormatRupiah } from '@arismun/format-rupiah'
+import { useClientOnceOnly, useGetBill } from '../hooks'
+import { useAccount } from 'wagmi'
+import OwnersComponent from '../components/OwnersComponent'
+import IdrtBalanceComponent from '../components/IdrtBalanceComponent'
+import VotingRequiredComponent from '../components/VotingRequiredComponent'
+import SubmittedTransactionComponent from '../components/SubmittedTransactionComponent'
+import PendingTransactionComponent from '../components/PendingTransactionComponent'
+import ExecutedTransactionComponent from '../components/ExecutedTransactionComponent'
+import HistoryTransactionComponent from '../components/HistoryTransactionComponent'
+import MyIdrtBalanceComponent from '../components/MyIdrtBalanceComponent'
+import { contractExecutor } from '@/helpers/ethers'
+import { readContract, writeContract } from 'wagmi/actions'
+import config from '@/wagmi'
+import kasepAbi from '@/abis/kasep.abi'
+import { IdrtAddress, kasepAddress } from '@/variables'
+import { ContractType, register } from '@/helpers/realtime'
+import erc20Abi from '@/abis/erc20.abi'
 
 
 const Home = () => {
-  const { address } = useAccount();
-  const { bill } = useGetBill(address);
+  const { address } = useAccount()
+  const { bill, refetch } = useGetBill(address)
+
+  const pay = async () => {
+    const allowance = await readContract(config, {
+      abi: erc20Abi,
+      address: IdrtAddress,
+      functionName: 'allowance',
+      args: [address, kasepAddress]
+    })
+
+    const amount = await readContract(config, {
+      abi: kasepAbi,
+      address: kasepAddress,
+      functionName: 'getBill',
+      args: [address]
+    })
+
+    const amount_with_decimals = BigInt(amount as bigint * BigInt(10 ** 6))
+
+    if (allowance as bigint < amount_with_decimals) {
+      await contractExecutor(async () => {
+        const hash = await writeContract(config, {
+          abi: erc20Abi,
+          address: IdrtAddress,
+          functionName: 'approve',
+          args: [kasepAddress, amount_with_decimals]
+        })
+        return hash
+      })
+    }
+
+    await contractExecutor(async () => {
+      const hash = await writeContract(config, {
+        abi: kasepAbi,
+        address: kasepAddress,
+        functionName: 'payBill'
+      })
+      return hash
+    })
+  }
+
+  useClientOnceOnly(() => {
+    register({
+      contract: ContractType.KASEP,
+      abi: 'BillPaid(owner,to,amount)',
+      callback: refetch
+    })
+  })
 
   return (
     <>
@@ -27,7 +81,7 @@ const Home = () => {
               <FormatRupiah value={bill}></FormatRupiah>
             </div>
             <div className="stat-desc">
-              <button className='btn btn-primary mt-3 text-lg px-8 py-1'>Pay</button>
+              <button className='btn btn-primary mt-3 text-lg px-8 py-1' onClick={pay}>Pay</button>
             </div>
           </div>
         </div>
@@ -49,6 +103,6 @@ const Home = () => {
       </div>
     </>
   )
-};
+}
 
-export default Home;
+export default Home

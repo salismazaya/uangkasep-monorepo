@@ -22,8 +22,8 @@ module.exports = {
       url: 'https://polygon-rpc.com',
       accounts: [process.env.PRIVATE_KEY]
     },
-    holesky: {
-      url: 'https://1rpc.io/holesky',
+    sepolia: {
+      url: 'https://1rpc.io/sepolia',
       accounts: [process.env.PRIVATE_KEY]
     },
     amoy: {

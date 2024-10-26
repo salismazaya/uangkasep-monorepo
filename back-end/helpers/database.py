@@ -1,7 +1,7 @@
 from pymongo import AsyncMongoClient
 import os, asyncio
 
-client = AsyncMongoClient(os.environ['MONGO_URI'])
+client = AsyncMongoClient(os.environ['MONGO_URL'])
 db = client.get_database('uangkasep')
 
 async def setup_database():

@@ -3,7 +3,7 @@
 import { contractInterface } from "@/helpers/ethers"
 import { useTransaction } from "@/hooks"
 
-export default function TransactionPageClient({ transactionId }: { transactionId: bigint }) {
+export default function FunctionComponent({ transactionId }: { transactionId: bigint }) {
     const { transaction } = useTransaction(transactionId)
     let function_: string | undefined;
 

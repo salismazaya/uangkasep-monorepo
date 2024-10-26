@@ -1,18 +1,66 @@
+'use client'
+
 import axios from "axios"
 import Link from "next/link"
-import TransactionPageClient from "./page_client";
+import FunctionComponent from "./components/FunctionComponent"
+import ActionComponent from "./components/ActionComponent"
+import { useEffect, useState } from "react"
+import { TransactionInterface } from "@/interfaces"
+import { useClientOnceOnly } from "@/hooks"
+import { ContractType, register } from "@/helpers/realtime"
 
-export default async ({ params: { transactionId } }: { params: { transactionId: bigint } }) => {
-    const response = await axios.get(`${process.env.BACKEND_URL}transactions/${transactionId}`)
-    const transaction = response.data;
+export default ({ params: { transactionId } }: { params: { transactionId: bigint } }) => {
+    const [transaction, setTransaction] = useState<TransactionInterface | undefined>();
+
+    const [isClient, setIsClient] = useState(false)
+
+    useEffect(() => {
+        setIsClient(true)
+    })
+
+    useClientOnceOnly(() => {
+        axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}transactions/${transactionId}`).then(res => {
+            setTransaction(res.data)
+        })
+    })
+
+    const refetch = () => {
+        axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}transactions/${transactionId}`).then(res => {
+            setTransaction(res.data)
+        })
+    }
+
+    useClientOnceOnly(() => {
+        register({
+            contract: ContractType.KASEP,
+            abi: 'Confirmation(address,uint256)',
+            callback: (_, _transactionId) => {
+                console.log("ACCEPT", transactionId == _transactionId, _transactionId)
+                if (_transactionId == transactionId) {
+                    setTimeout(refetch, 3000)
+                }
+            },
+        })
+
+        register({
+            contract: ContractType.KASEP,
+            abi: 'Revocation(address,uint256)',
+            callback: (_, _transactionId) => {
+                console.log("REVOKE", transactionId == _transactionId, _transactionId)
+                if (_transactionId == transactionId) {
+                    setTimeout(refetch, 3000)
+                }
+            },
+        })
+    })
 
     let textClass = ""
 
-    if (transaction.status === "failure" || transaction.status === "rejected") {
+    if (transaction?.status === "failure" || transaction?.status === "rejected") {
         textClass = "text-error"
-    } else if (transaction.status === "executed") {
+    } else if (transaction?.status === "executed") {
         textClass = "text-success"
-    } else if (transaction.status === "waiting") {
+    } else if (transaction?.status === "waiting") {
         textClass = "text-warning"
     }
 
@@ -25,7 +73,7 @@ export default async ({ params: { transactionId } }: { params: { transactionId: 
                             <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 9-3 3m0 0 3 3m-3-3h7.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                         </svg>
                     </Link>
-                    <p className="ml-3">{new Date(transaction.created).toLocaleString()}</p>
+                    <p className="ml-3">{isClient && new Date(transaction?.created || 0).toLocaleString()}</p>
                 </div>
 
                 <div className="mt-2">
@@ -33,35 +81,39 @@ export default async ({ params: { transactionId } }: { params: { transactionId: 
                         <tbody>
                             <tr>
                                 <td>Transaction ID</td>
-                                <td>{transaction.transactionId}</td>
+                                <td>{transaction?.transactionId}</td>
                             </tr>
                             <tr>
                                 <td>Destination</td>
                                 <td className="text-blue-500 hover:text-blue-600 break-all">
-                                    <Link target="_blank" href={'https://polygonscan.com/address/' + transaction.destination}>{transaction.destination}</Link>
+                                    <Link target="_blank" href={'https://polygonscan.com/address/' + transaction?.destination}>{transaction?.destination}</Link>
                                 </td>
                             </tr>
-                            <TransactionPageClient transactionId={transactionId} />
+                            <FunctionComponent transactionId={transactionId} />
                             <tr>
                                 <td>Status</td>
                                 <td className="capitalize">
-                                    <p className={textClass}>{transaction.status}</p>
+                                    <p className={textClass}>{transaction?.status}</p>
                                 </td>
                             </tr>
                             <tr>
                                 <td>Total Accept</td>
-                                <td className="text-success">{transaction.total_accept}</td>
+                                <td className="text-success">{transaction?.total_accept}</td>
                             </tr>
                             <tr>
                                 <td>Total Reject</td>
-                                <td className="text-error">{transaction.total_reject}</td>
+                                <td className="text-error">{transaction?.total_reject}</td>
                             </tr>
                             <tr>
                                 <td>Total Pending</td>
-                                <td className="text-warning">{transaction.total_pending}</td>
+                                <td className="text-warning">{transaction?.total_pending}</td>
                             </tr>
                         </tbody>
                     </table>
+                </div>
+
+                <div className="mt-5">
+                    <ActionComponent refetchParrent={refetch} transaction={transaction} transactionId={transactionId} />
                 </div>
             </div>
         </>

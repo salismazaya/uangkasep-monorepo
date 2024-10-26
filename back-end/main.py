@@ -37,7 +37,7 @@ origins = os.environ['CORS_ORIGINS'].split(',')
 app.add_middleware(
     CORSMiddleware,
     allow_origins = origins,
-    allow_methods = ['*'],
+    allow_methods = ['PUT', 'POST', 'GET'],
     allow_headers = ['*'],
 )
 
@@ -84,6 +84,14 @@ async def get_transactions():
         if transaction['status'] == 'executed' and required > total_accept:
             required = total_accept
 
+        status = transaction['status']
+        if required % 2 == 0:
+            if total_reject >= required // 2:
+                status = 'rejected'
+        else:
+            if total_reject >= required // 2 + 1:
+                status = 'rejected'
+
         data = {}
         data['transactionId'] = transaction['transactionId']
         data['destination'] = transaction['destination']
@@ -94,7 +102,7 @@ async def get_transactions():
         data['total_pending'] = total_pending
         data['total_accept_required'] = required
         data['created'] = transaction['created']
-        data['status'] = transaction['status']
+        data['status'] = status
         result.append(data)
 
     return result
@@ -131,6 +139,7 @@ async def get_transaction_detail(transaction_id: int, response: Response):
     
     async for _transaction in db.get_collection('transactions_action').find({
         '$and': [
+
             {'status': 'reject'},
             {'transactionId': transaction['transactionId']},
             {'$or': owners_query}
@@ -162,6 +171,14 @@ async def get_transaction_detail(transaction_id: int, response: Response):
     if total_pending < 0:
         total_pending = 0
 
+    status = transaction['status']
+    if required % 2 == 0:
+        if total_reject >= required // 2:
+            status = 'rejected'
+    else:
+        if total_reject >= required // 2 + 1:
+            status = 'rejected'
+            
     data = {}
     data['transactionId'] = transaction['transactionId']
     data['destination'] = transaction['destination']
@@ -175,16 +192,35 @@ async def get_transaction_detail(transaction_id: int, response: Response):
     data['accept_owners'] = accept_owners
     data['reject_owners'] = reject_owners
     data['pending_owners'] = pending_owners
-    data['status'] = transaction['status']
+    data['status'] = status
 
     return data
+
+
+@app.get('/transactions/{transactionId}/{address}')
+async def get_transaction(transactionId: int, address: str, response: Response):
+    try:
+        address = w3.to_checksum_address(address)
+    except:
+        response.status_code = 400
+        return {'status': 400, 'detail': 'address not valid'}
+    
+    transaction = await db.get_collection('transactions_action').find_one({
+        'transactionId': transactionId,
+        'sender': address
+    })
+
+    if transaction is None:
+        return {'status': 200, 'detail': 'ok', 'data': {'status': 'waiting'}}
+    
+    return {'status': 200, 'detail': 'ok', 'data': {'status': transaction['status']}}
 
 
 @app.put('/transactions/{transactionId}/reject')
 async def reject_transaction(transactionId: int, response: Response, signature: str = Depends(api_key_scheme), expired: int = Depends(expired_scheme)):
     try:
         now = datetime.now()
-        expected_message = f"Reject transaction for id {transactionId} expire at {expired}"
+        expected_message = f"Reject transaction for id {transactionId}. this message expire at {expired}"
         message = encode_defunct(text = expected_message)
         if not signature.startswith('0x'):
             signature = '0x' + signature

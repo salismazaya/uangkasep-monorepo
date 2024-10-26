@@ -70,7 +70,6 @@ export default () => {
                             date.getFullYear().toString().slice(-2) + ' ' +
                             date.getHours().toString().padStart(2, '0') + ':' +
                             date.getMinutes().toString().padStart(2, '0')
-
                         return (
                             <tr key={transaction.transactionId}>
                                 <td className="text-center">

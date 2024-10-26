@@ -6,7 +6,7 @@ export default () => {
 
     useClientOnceOnly(() => {
         register({
-            contract: ContractType.MULTISIG,
+            contract: ContractType.KASEP,
             abi: 'Submission(transactionId)',
             callback: refetch,
         })

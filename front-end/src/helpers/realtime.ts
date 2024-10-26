@@ -1,5 +1,3 @@
-'use client'
-
 import { Contract, ethers } from "ethers"
 import { IdrtAddress, kasepAddress, wssRpcUrl } from "../variables"
 import erc20Abi from "../abis/erc20.abi"

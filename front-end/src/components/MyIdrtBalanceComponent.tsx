@@ -13,8 +13,8 @@ export default () => {
         register({
             contract: ContractType.IDRT,
             abi: 'Transfer(from,to,value)',
-            callback: (from) => {
-                if (from == address) refetch()
+            callback: (from, to) => {
+                if (from == address || to == address) refetch()
             },
         })
     })
