@@ -13,7 +13,10 @@ from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
 from redis.asyncio import Redis
 from web3 import AsyncWeb3
+from zoneinfo import ZoneInfo
 import os
+
+tz = ZoneInfo("UTC") 
 
 r = Redis.from_url(os.environ['REDIS_URL'])
 
@@ -48,7 +51,7 @@ async def ip_identifier(request: Request):
 dependencies = [Depends(RateLimiter(times = 30, seconds = 60, identifier = ip_identifier))]
 
 @app.get('/transactions', dependencies = dependencies)
-async def get_transactions():
+async def get_transactions(cursor: int = 0, status: str = None):
     owners = await kasep_contract.functions.getOwners().call()
     required = await kasep_contract.functions.required().call()
 
@@ -59,9 +62,21 @@ async def get_transactions():
 
     result = []
     
+    per_page = 8
+
+    filter_kwargs = {}
+
+    if not status is None:
+        filter_kwargs['status'] = status
+
+    i = 0
     async for transaction in db.get_collection('transactions')\
         .find({}, {'_id': False})\
-        .sort({'created': -1}):
+        .sort({'created': -1})\
+        .skip(per_page * cursor):
+
+        if i == per_page:
+            break
 
         total_accept = await db.get_collection('transactions_action').count_documents({
             '$and': [
@@ -84,13 +99,13 @@ async def get_transactions():
         if transaction['status'] == 'executed' and required > total_accept:
             required = total_accept
 
-        status = transaction['status']
+        transaction_status = transaction['status']
         if required % 2 == 0:
             if total_reject >= required // 2:
-                status = 'rejected'
+                transaction_status = 'rejected'
         else:
             if total_reject >= required // 2 + 1:
-                status = 'rejected'
+                transaction_status = 'rejected'
 
         data = {}
         data['transactionId'] = transaction['transactionId']
@@ -102,10 +117,23 @@ async def get_transactions():
         data['total_pending'] = total_pending
         data['total_accept_required'] = required
         data['created'] = transaction['created']
-        data['status'] = status
-        result.append(data)
+        data['status'] = transaction_status    
 
-    return result
+        for k, v in filter_kwargs.items():
+            if data[k] != v:
+                break
+        
+        else:
+            result.append(data)
+            i += 1
+
+    total_transaction = await db.get_collection('transactions').count_documents({})
+
+    return {
+        'total_transaction': total_transaction,
+        'cursor': cursor,
+        'data': result
+    }
 
 
 @app.get('/transactions/{transaction_id}', dependencies = dependencies)
@@ -219,7 +247,7 @@ async def get_transaction(transactionId: int, address: str, response: Response):
 @app.put('/transactions/{transactionId}/reject')
 async def reject_transaction(transactionId: int, response: Response, signature: str = Depends(api_key_scheme), expired: int = Depends(expired_scheme)):
     try:
-        now = datetime.now()
+        now = datetime.now().astimezone(tz)
         expected_message = f"Reject transaction for id {transactionId}. this message expire at {expired}"
         message = encode_defunct(text = expected_message)
         if not signature.startswith('0x'):
@@ -268,7 +296,7 @@ async def register_user_name(address: str, response: Response, data: RegisterUse
     try:
         address_checksumed = w3.to_checksum_address(address)
         name = data.name
-        now = datetime.now()
+        now = datetime.now().astimezone(tz)
 
         expected_message = f"Register Name {name} For Address {address}"
         message = encode_defunct(text = expected_message)

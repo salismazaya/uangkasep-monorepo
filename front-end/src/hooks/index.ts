@@ -89,6 +89,16 @@ export const useIdrtBalance = (address: `0x${string}` | undefined) => {
     return { idrtBalance: ((BigInt(idrtBalance || 0) / BigInt(10 ** 6)) as unknown) as number || 0 / (10 ** 6), refetch }
 }
 
+export const useAmountPerMonth = () => {
+    const { data: amountPerMonth, refetch }: NumberInterface = useReadContract({
+        abi: kasepAbi,
+        address: kasepAddress,
+        functionName: 'amountPerMonth',
+    })
+
+    return { amountPerMonth: ((BigInt(amountPerMonth || 0) / BigInt(10 ** 6)) as unknown) as number || 0 / (10 ** 6), refetch }
+}
+
 interface ContractsInterface {
     abi: any,
     address: `0x${string}`,

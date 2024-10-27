@@ -24,7 +24,7 @@ export default function ActionComponent({ transaction, transactionId, refetchPar
     })
 
     const [status, setStatus] = useState<string | null>(null)
-
+    refetch
     const execute = () => {
         if (address !== undefined) {
             axios.get(`${backendUrl}transactions/${transactionId}/${address}`).then(res => {
@@ -142,10 +142,10 @@ export default function ActionComponent({ transaction, transactionId, refetchPar
     return (
         <>
             <div className="flex gap-2">
-                {status !== "reject" && !confirmed && transaction?.status === "waiting" && <button className="btn btn-success" onClick={accept}>Accept</button>}
-                {status !== "reject" && !confirmed && transaction?.status === "waiting" && <button className="btn btn-error" onClick={reject}>Reject</button>}
+                {status !== "reject" && !confirmed &&  (transaction?.status === "waiting" || transaction?.status === "failure") && <button className="btn btn-success" onClick={accept}>Accept</button>}
+                {status !== "reject" && !confirmed &&  (transaction?.status === "waiting" || transaction?.status === "failure") && <button className="btn btn-error" onClick={reject}>Reject</button>}
                 {status !== "reject" && confirmed && transaction?.status === "failure" && <button className="btn btn-warning" onClick={reexecute}>Re-execute</button>}
-                {confirmed && transaction?.status === "waiting" || transaction?.status === "failure" && <button className="btn btn-error" onClick={revoke}>Revoke</button>}
+                {confirmed && (transaction?.status === "waiting" || transaction?.status === "failure") && <button className="btn btn-error" onClick={revoke}>Revoke</button>}
             </div>
         </>
     )

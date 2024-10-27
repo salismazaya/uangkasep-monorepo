@@ -18,11 +18,18 @@ import kasepAbi from '@/abis/kasep.abi'
 import { IdrtAddress, kasepAddress } from '@/variables'
 import { ContractType, register } from '@/helpers/realtime'
 import erc20Abi from '@/abis/erc20.abi'
-
+import AmountPerMonthComponent from '@/components/AmountPerMonthComponent'
+import { useEffect, useState } from 'react'
 
 const Home = () => {
   const { address } = useAccount()
   const { bill, refetch } = useGetBill(address)
+
+  const [isClient, setIsClient] = useState(false)
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
 
   const pay = async () => {
     const allowance = await readContract(config, {
@@ -81,7 +88,8 @@ const Home = () => {
               <FormatRupiah value={bill}></FormatRupiah>
             </div>
             <div className="stat-desc">
-              <button className='btn btn-primary mt-3 text-lg px-8 py-1' onClick={pay}>Pay</button>
+              {isClient && address !== undefined && <button className='btn btn-primary mt-3 text-lg px-8 py-1' onClick={pay}>Pay</button>}
+              {isClient && address === undefined && <button className='btn btn-primary btn-disabled mt-3 text-lg px-8 py-1'>Pay</button>}
             </div>
           </div>
         </div>
@@ -91,6 +99,7 @@ const Home = () => {
 
       <div className='grid grid-cols-2 lg:grid-cols-4 mt-3 gap-2'>
         <IdrtBalanceComponent />
+        <AmountPerMonthComponent />
         <OwnersComponent />
         <VotingRequiredComponent />
         <SubmittedTransactionComponent />

@@ -1,11 +1,11 @@
 'use client'
 
-import Link from "next/link";
-import { useBillingOwner } from "../../hooks";
-import { FormatRupiah } from "@arismun/format-rupiah";
+import Link from "next/link"
+import { useBillingOwner } from "../../hooks"
+import { FormatRupiah } from "@arismun/format-rupiah"
 
 export default ({ hook }: { hook: (active: boolean) => void}) => {
-    const { billingsOwner } = useBillingOwner();
+    const { billingsOwner } = useBillingOwner()
 
     return (
         <>

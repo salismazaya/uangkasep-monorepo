@@ -10,7 +10,11 @@ from helpers.database import db, setup_database
 from datetime import datetime
 from eth_abi.abi import decode
 from abis.kasepAbi import kasepAbi
+from zoneinfo import ZoneInfo
 import asyncio, os, traceback
+
+tz = ZoneInfo('UTC')
+
 
 async def generator(w3: _PersistentConnectionWeb3):
     data_collection = db.get_collection('data')
@@ -51,7 +55,7 @@ async def main():
                 execution_failure_hash = w3.keccak(text = "ExecutionFailure(uint256)")
                 
                 async for payload in generator(w3):
-                    now = datetime.now()
+                    now = datetime.now().astimezone(tz)
                     result = payload["result"]
                     if result.get('miner'): # check is log about new block
                         block_number = result['number']

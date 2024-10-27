@@ -35,7 +35,6 @@ export default ({ params: { transactionId } }: { params: { transactionId: bigint
             contract: ContractType.KASEP,
             abi: 'Confirmation(address,uint256)',
             callback: (_, _transactionId) => {
-                console.log("ACCEPT", transactionId == _transactionId, _transactionId)
                 if (_transactionId == transactionId) {
                     setTimeout(refetch, 3000)
                 }
@@ -46,7 +45,6 @@ export default ({ params: { transactionId } }: { params: { transactionId: bigint
             contract: ContractType.KASEP,
             abi: 'Revocation(address,uint256)',
             callback: (_, _transactionId) => {
-                console.log("REVOKE", transactionId == _transactionId, _transactionId)
                 if (_transactionId == transactionId) {
                     setTimeout(refetch, 3000)
                 }
@@ -73,7 +71,7 @@ export default ({ params: { transactionId } }: { params: { transactionId: bigint
                             <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 9-3 3m0 0 3 3m-3-3h7.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                         </svg>
                     </Link>
-                    <p className="ml-3">{isClient && new Date(transaction?.created || 0).toLocaleString()}</p>
+                    <p className="ml-3">{isClient  && transaction && new Date(transaction?.created + '+00:00').toLocaleString()}</p>
                 </div>
 
                 <div className="mt-2">

@@ -7,7 +7,8 @@ export const contractInterface = new Interface([
     "function changeRequirement(uint256)",
     "function addOwner(address)",
     "function addOwner(address)",
-    "function transfer(address,uint256)"
+    "function transfer(address,uint256)",
+    "function changeAmountPerMonth(uint256)"
 ])
 
 export const contractExecutor = (callback: () => Promise<string>) => {
