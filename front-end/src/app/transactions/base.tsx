@@ -3,13 +3,18 @@
 import { ContractType, register } from "@/helpers/realtime"
 import { useClientOnceOnly } from "@/hooks"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 
-export default () => {
-    const [cursor, setCursor] = useState<number>(1)
+const TransactionList = ({ cursor }: { cursor: number }) => {
+    const router = useRouter()
     const [transactions, setTransactions] = useState<any[]>()
     const [totalTransaction, setTotalTransaction] = useState<number>()
     const [isLoading, setIsLoading] = useState(false)
+
+    if (isNaN(cursor)) {
+        return <p className="text-center text-3xl text-error mt-3">400: BAD HEART</p>
+    }
 
     const execute = () => {
         setIsLoading(true)
@@ -48,13 +53,21 @@ export default () => {
 
     return (
         <>
-            <div className="shadow-md min-h-[620px]">
+            <div className="shadow-md min-h-[620px] mt-5">
+                <Link href="/">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-12">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 9-3 3m0 0 3 3m-3-3h7.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    </svg>
+                </Link>
                 <table className="table table-fixed">
                     <thead>
                         <tr className="text-center">
                             <th>Date</th>
                             <th className="text-left">Destination</th>
-                            <th>Total Voting</th>
+                            <th>
+                                <span className="hidden lg:inline">Total Voting</span>
+                                <span className="inline lg:hidden">Voting</span>
+                            </th>
                             <th>
                                 <span>Status</span>
                             </th>
@@ -81,7 +94,7 @@ export default () => {
                                 date.getMinutes().toString().padStart(2, '0')
                             return (
                                 <tr key={transaction.transactionId}>
-                                    <td className="text-center">
+                                    <td className="text-center text-sm lg:text-base">
                                         <span>{formattedDateTime}</span>
                                     </td>
                                     <td className="truncate">{transaction.destination}</td>
@@ -97,7 +110,7 @@ export default () => {
                                     </td>
                                     <td>
                                         <center>
-                                            <Link className="btn btn-info font-bold" href={"/transaction/" + transaction.transactionId}>Detail</Link>
+                                            <Link className="btn btn-sm lg:btn-md btn-info font-bold" href={"/transaction/" + transaction.transactionId}>Detail</Link>
                                         </center>
                                     </td>
                                 </tr>
@@ -108,11 +121,13 @@ export default () => {
             </div>
             <center>
                 <div className="join mt-3">
-                    <button className={`join-item btn btn-neutral ${cursor == 1 && 'btn-disabled'}`} onClick={() => setCursor(cursor - 1)}>«</button>
+                    <button onClick={() => router.back()} className={`join-item btn btn-neutral ${cursor == 1 && 'btn-disabled'}`}>«</button>
                     <button className="join-item btn btn-neutral hover:bg-neutral">Page {cursor}</button>
-                    <button className={`join-item btn btn-neutral ${cursor * 8 >= (totalTransaction || 0) && 'btn-disabled'}`} onClick={() => setCursor(cursor + 1)}>»</button>
+                    <button onClick={() => router.push(`/transactions/${cursor + 1}`)} className={`join-item btn btn-neutral ${cursor * 8 >= (totalTransaction || 0) && 'btn-disabled'}`}>»</button>
                 </div>
             </center>
         </>
     )
 }
+
+export default TransactionList

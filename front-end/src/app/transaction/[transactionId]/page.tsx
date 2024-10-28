@@ -8,15 +8,18 @@ import { useEffect, useState } from "react"
 import { TransactionInterface } from "@/interfaces"
 import { useClientOnceOnly } from "@/hooks"
 import { ContractType, register } from "@/helpers/realtime"
+import { useRouter } from "next/navigation"
 
 export default ({ params: { transactionId } }: { params: { transactionId: bigint } }) => {
-    const [transaction, setTransaction] = useState<TransactionInterface | undefined>();
+    const router = useRouter()
+
+    const [transaction, setTransaction] = useState<TransactionInterface | undefined>()
 
     const [isClient, setIsClient] = useState(false)
 
     useEffect(() => {
         setIsClient(true)
-    })
+    }, [])
 
     useClientOnceOnly(() => {
         axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}transactions/${transactionId}`).then(res => {
@@ -66,11 +69,11 @@ export default ({ params: { transactionId } }: { params: { transactionId: bigint
         <>
             <div className="w-full rounded p-2 relative mt-3 text-xl">
                 <div className="flex items-center">
-                    <Link href="/">
+                    <button onClick={() => router.back()}>
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-12">
                             <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 9-3 3m0 0 3 3m-3-3h7.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                         </svg>
-                    </Link>
+                    </button>
                     <p className="ml-3">{isClient && transaction && new Date(transaction?.created + '+00:00').toLocaleString()}</p>
                 </div>
 

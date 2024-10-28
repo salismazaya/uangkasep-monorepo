@@ -9,7 +9,6 @@ import VotingRequiredComponent from '../components/VotingRequiredComponent'
 import SubmittedTransactionComponent from '../components/SubmittedTransactionComponent'
 import PendingTransactionComponent from '../components/PendingTransactionComponent'
 import ExecutedTransactionComponent from '../components/ExecutedTransactionComponent'
-import HistoryTransactionComponent from '../components/HistoryTransactionComponent'
 import MyIdrtBalanceComponent from '../components/MyIdrtBalanceComponent'
 import { contractExecutor } from '@/helpers/ethers'
 import { readContract, writeContract } from 'wagmi/actions'
@@ -108,7 +107,7 @@ const Home = () => {
       </div>
 
       <div className='mt-4'>
-        <HistoryTransactionComponent></HistoryTransactionComponent>
+        {/* <HistoryTransactionComponent></HistoryTransactionComponent> */}
       </div>
     </>
   )
