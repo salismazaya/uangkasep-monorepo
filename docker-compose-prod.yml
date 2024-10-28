@@ -4,7 +4,7 @@ services:
       context: back-end
       dockerfile: Dockerfile.prod
     ports:
-      - 8000:8000
+      - 8030:8030
   frontend:
     build:
       context: front-end
