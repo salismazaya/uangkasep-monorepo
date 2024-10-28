@@ -14,4 +14,4 @@ RUN npm install -g nodemon
 
 ENV REDIS_URL=redis://redis/0
 
-CMD granian --interface asgi main:app --reload --host 0.0.0.0 --port 8000
+CMD granian --interface asgi main:app --reload --host 0.0.0.0 --port 8030
