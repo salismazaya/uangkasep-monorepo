@@ -6,7 +6,7 @@ import {
 } from 'wagmi/chains'
 
 // import { getDefaultConfig } from '@rainbow-me/rainbowkit'
-import { connectorsForWallets } from "@rainbow-me/rainbowkit";
+import { connectorsForWallets } from "@rainbow-me/rainbowkit"
 import {
   argentWallet,
   coinbaseWallet,
@@ -17,8 +17,9 @@ import {
   safeWallet,
   walletConnectWallet,
   braveWallet
-} from "@rainbow-me/rainbowkit/wallets";
-import { createConfig, http } from 'wagmi';
+} from "@rainbow-me/rainbowkit/wallets"
+import { createConfig, http } from 'wagmi'
+import { Transport } from 'viem'
 
 const connectors = connectorsForWallets(
   [
@@ -26,6 +27,7 @@ const connectors = connectorsForWallets(
       groupName: "Recommended",
       wallets: [
         metaMaskWallet,
+        braveWallet,
         rainbowWallet,
         walletConnectWallet,
         ledgerWallet,
@@ -33,12 +35,11 @@ const connectors = connectorsForWallets(
         coinbaseWallet,
         argentWallet,
         safeWallet,
-        braveWallet
       ],
     },
   ],
   { appName: process.env.NEXT_PUBLIC_WALLETCONNECT_APPNAME as string, projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID as string },
-);
+)
 
 // const config = getDefaultConfig({
 //   appName: process.env.NEXT_PUBLIC_WALLETCONNECT_APPNAME as string,
@@ -46,10 +47,10 @@ const connectors = connectorsForWallets(
 //   chains: [isTestnet ? sepolia : polygon],
 // })
 
-const transports: Record<number, any> = {
+const transports: Record<number, Transport> = {
   [sepolia.id]: http(),
   [polygon.id]: http(),
-};
+}
 
 
 const config = createConfig({

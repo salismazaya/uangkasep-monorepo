@@ -2,7 +2,7 @@ services:
   backend:
     build: back-end
     ports:
-      - 8000:8000
+      - 8030:8030
     volumes:
       - ./back-end:/app
   frontend:

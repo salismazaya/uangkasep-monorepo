@@ -71,7 +71,7 @@ export default ({ params: { transactionId } }: { params: { transactionId: bigint
                             <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 9-3 3m0 0 3 3m-3-3h7.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                         </svg>
                     </Link>
-                    <p className="ml-3">{isClient  && transaction && new Date(transaction?.created + '+00:00').toLocaleString()}</p>
+                    <p className="ml-3">{isClient && transaction && new Date(transaction?.created + '+00:00').toLocaleString()}</p>
                 </div>
 
                 <div className="mt-2">
@@ -84,7 +84,7 @@ export default ({ params: { transactionId } }: { params: { transactionId: bigint
                             <tr>
                                 <td>Destination</td>
                                 <td className="text-blue-500 hover:text-blue-600 break-all">
-                                    <Link target="_blank" href={'https://polygonscan.com/address/' + transaction?.destination}>{transaction?.destination}</Link>
+                                    <Link target="_blank" href={'https://polygonscan.com/address/' + transaction?.destination || ''}>{transaction?.destination}</Link>
                                 </td>
                             </tr>
                             <FunctionComponent transactionId={transactionId} />
