@@ -1,17 +1,81 @@
 'use client'
 
 import Link from "next/link"
-import { useBillingOwner } from "../../hooks"
+import { useBillingOwner, useClientOnceOnly } from "../../hooks"
 import { FormatRupiah } from "@arismun/format-rupiah"
+import { contractExecutor, contractInterface } from "@/helpers/ethers"
+import { writeContract } from "wagmi/actions"
+import config from "@/wagmi"
+import kasepAbi from "@/abis/kasep.abi"
+import { kasepAddress } from "@/variables"
+import { ContractType, register } from "@/helpers/realtime"
 
-export default ({ hook }: { hook: (active: boolean) => void}) => {
-    const { billingsOwner } = useBillingOwner()
+export default ({ hook }: { hook: (active: boolean) => void }) => {
+    const { billingsOwner, refetch } = useBillingOwner()
+
+    const delete_ = (address: `0x${string}`) => {
+        contractExecutor(async () => {
+            const calldata = contractInterface.encodeFunctionData("removeOwner", [address])
+            const hash = writeContract(config, {
+                abi: kasepAbi,
+                address: kasepAddress,
+                functionName: 'submitTransaction',
+                args: [kasepAddress, 0, calldata]
+            })
+            return hash
+        })
+    }
+
+    const checkpoint = (address: `0x${string}`) => {
+        contractExecutor(async () => {
+            const calldata = contractInterface.encodeFunctionData("checkpoint", [[address]])
+            const hash = writeContract(config, {
+                abi: kasepAbi,
+                address: kasepAddress,
+                functionName: 'submitTransaction',
+                args: [kasepAddress, 0, calldata]
+            })
+            return hash
+        })
+    }
+
+    useClientOnceOnly(() => {
+        register({
+            abi: 'OwnerAddition(owner)',
+            contract: ContractType.KASEP,
+            callback: refetch
+        })
+
+        register({
+            abi: 'OwnerRemoval(owner)',
+            contract: ContractType.KASEP,
+            callback: refetch
+        })
+
+        register({
+            abi: 'OwnerRemoval(owner)',
+            contract: ContractType.KASEP,
+            callback: refetch
+        })
+
+        register({
+            abi: 'BillPaid(owner,amount)',
+            contract: ContractType.KASEP,
+            callback: refetch
+        })
+
+        register({
+            abi: 'Checkpoint(addressed)',
+            contract: ContractType.KASEP,
+            callback: refetch
+        })
+    })
 
     return (
         <>
             <div className='mt-4'>
                 <div>
-                    <button className="btn btn-success mb-3" onClick={() => hook(true) } >Add Owner</button>
+                    <button className="btn btn-success mb-3" onClick={() => hook(true)} >Add Owner</button>
                     <table className="table table-fixed">
                         <thead>
                             <tr>
@@ -37,8 +101,8 @@ export default ({ hook }: { hook: (active: boolean) => void}) => {
                                             <FormatRupiah value={billingOwner.billing}></FormatRupiah>
                                         </td>
                                         <td >
-                                            <button className="btn btn-error btn-xs text-error-content">Delete</button>
-                                            <button className="btn btn-warning btn-xs mt-1 text-warning-content">Checkpoint</button>
+                                            <button onClick={() => delete_(billingOwner.address as `0x${string}`)} className="btn btn-error btn-xs text-error-content">Delete</button>
+                                            <button onClick={() => checkpoint(billingOwner.address as `0x${string}`)} className="btn btn-warning btn-xs mt-1 text-warning-content">Checkpoint</button>
                                         </td>
                                     </tr>
                                 )

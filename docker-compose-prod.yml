@@ -1,0 +1,28 @@
+services:
+  backend:
+    build:
+      context: back-end
+      dockerfile: Dockerfile.prod
+    ports:
+      - 8000:8000
+  frontend:
+    build:
+      context: front-end
+      dockerfile: Dockerfile.prod
+    ports:
+      - 3030:3030
+  worker:
+    build: back-end
+    command: python3 worker.py
+  mongodb:
+    image: mongo:8-noble
+    volumes:
+      - uangkasepmongo:/data/db
+    env_file:
+      - .env
+    logging:
+      driver: none
+  redis:
+    image: redis:7.4.1-alpine3.20
+volumes:
+  uangkasepmongo:

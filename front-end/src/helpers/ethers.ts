@@ -6,9 +6,10 @@ import config from "../wagmi"
 export const contractInterface = new Interface([
     "function changeRequirement(uint256)",
     "function addOwner(address)",
-    "function addOwner(address)",
+    "function removeOwner(address)",
     "function transfer(address,uint256)",
-    "function changeAmountPerMonth(uint256)"
+    "function changeAmountPerMonth(uint256)",
+    "function checkpoint(address[])",
 ])
 
 export const contractExecutor = (callback: () => Promise<string>) => {
