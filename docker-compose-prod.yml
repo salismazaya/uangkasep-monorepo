@@ -12,7 +12,9 @@ services:
     ports:
       - 3030:3030
   worker:
-    build: back-end
+    build:
+      context: back-end
+      dockerfile: Dockerfile.prod
     command: python3 worker.py
   mongodb:
     image: mongo:8-noble
