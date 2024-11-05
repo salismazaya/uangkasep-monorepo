@@ -63,7 +63,10 @@ const TransactionList = ({ cursor }: { cursor: number }) => {
                     <thead>
                         <tr className="text-center">
                             <th>Date</th>
-                            <th className="text-left">Destination</th>
+                            <th className="text-left">
+                                <span className="hidden lg:inline">Destination</span>
+                                <span className="inline lg:hidden">Dst</span>
+                            </th>
                             <th>
                                 <span className="hidden lg:inline">Total Voting</span>
                                 <span className="inline lg:hidden">Voting</span>

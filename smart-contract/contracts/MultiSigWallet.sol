@@ -6,7 +6,11 @@ pragma solidity ^0.8.20;
 
 /// @title Multisignature wallet - Allows multiple parties to agree on transactions before execution.
 /// @author Stefan George - <stefan.george@consensys.net>
-contract MultiSigWallet {
+
+import "./KasepLibrary.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+
+contract MultiSigWallet is Initializable {
     /*
      *  Events
      */
@@ -14,7 +18,6 @@ contract MultiSigWallet {
     event Revocation(address indexed sender, uint256 indexed transactionId);
     event Submission(uint256 indexed transactionId);
     event Execution(uint256 indexed transactionId);
-    event ExternalCallOutput(uint256 value, bytes data, bytes output);
     event ExecutionFailure(uint256 indexed transactionId);
     event Deposit(address indexed sender, uint256 value);
     event OwnerAddition(address indexed owner);
@@ -24,19 +27,14 @@ contract MultiSigWallet {
     /*
      *  Storage
      */
-    mapping(uint256 => Transaction) public transactions;
+    mapping(uint256 => KasepLibrary.Transaction) public transactions;
     mapping(uint256 => mapping(address => bool)) public confirmations;
     mapping(address => bool) public isOwner;
+    mapping(uint256 => bool) lock;
+
     address[] public owners;
     uint256 public required;
     uint256 public transactionCount;
-
-    struct Transaction {
-        address destination;
-        uint256 value;
-        bytes data;
-        bool executed;
-    }
 
     struct ExternalCall {
         bool success;
@@ -91,6 +89,13 @@ contract MultiSigWallet {
         _;
     }
 
+    modifier noReentrancy(uint256 _id) {
+        lock[_id] = true;
+        require(lock[_id] == false);
+        _;
+        lock[_id] = false;
+    }
+
     /// @dev Fallback function allows to deposit ether.
     fallback() external payable {}
 
@@ -104,10 +109,10 @@ contract MultiSigWallet {
     /// @dev Contract constructor sets initial owners and required number of confirmations.
     /// @param _owners List of initial owners.
     /// @param _required Number of required confirmations.
-    function _MultiSigWallet(
+    function initialize(
         address[] memory _owners,
         uint256 _required
-    ) private validRequirement(_owners.length, _required) {
+    ) public validRequirement(_owners.length, _required) {
         for (uint i = 0; i < _owners.length; i++) {
             require(!isOwner[_owners[i]] && _owners[i] != address(0));
             isOwner[_owners[i]] = true;
@@ -117,8 +122,9 @@ contract MultiSigWallet {
     }
 
     constructor(address[] memory _owners, uint256 _required) {
-        _MultiSigWallet(_owners, _required);
+        initialize(_owners, _required);
     }
+    
 
     /// @dev Allows to add a new owner. Transaction has to be sent by wallet.
     /// @param owner Address of new owner.
@@ -177,6 +183,15 @@ contract MultiSigWallet {
         emit RequirementChange(_required);
     }
 
+    function markTransactionAsExecuted(
+        uint256 transactionId
+    ) public notExecuted(transactionId) {
+        require(msg.sender == address(this) || isConfirmed(transactionId));
+        KasepLibrary.Transaction storage txn = transactions[transactionId];
+        txn.executed = true;
+        emit Execution(transactionId);
+    }
+
     /// @dev Allows an owner to submit and confirm a transaction.
     /// @param destination Transaction target address.
     /// @param value Transaction ether value.
@@ -232,15 +247,26 @@ contract MultiSigWallet {
         notExecuted(transactionId)
     {
         if (isConfirmed(transactionId)) {
-            Transaction storage txn = transactions[transactionId];
-            txn.executed = true;
-            if (external_call(txn.destination, txn.value, txn.data))
+            KasepLibrary.Transaction storage txn = transactions[transactionId];
+            if (external_call(txn.destination, txn.value, txn.data)) {
+                txn.executed = true;
                 emit Execution(transactionId);
-            else {
+            } else {
                 emit ExecutionFailure(transactionId);
                 txn.executed = false;
             }
         }
+    }
+
+    /// @dev Allows public to execute a confirmed transaction.
+    function executeTransactionReverted(
+        uint256 transactionId
+    ) external notExecuted(transactionId) noReentrancy(transactionId) {
+        require(isConfirmed(transactionId));
+        KasepLibrary.Transaction storage txn = transactions[transactionId];
+        require(external_call(txn.destination, txn.value, txn.data));
+        txn.executed = true;
+        emit Execution(transactionId);
     }
 
     /// @dev Returns the confirmation status of a transaction.
@@ -270,7 +296,7 @@ contract MultiSigWallet {
         bytes memory data
     ) internal notNull(destination) returns (uint256) {
         uint256 transactionId = transactionCount;
-        transactions[transactionId] = Transaction({
+        transactions[transactionId] = KasepLibrary.Transaction({
             destination: destination,
             value: value,
             data: data,
@@ -286,10 +312,7 @@ contract MultiSigWallet {
         uint256 value,
         bytes memory data
     ) internal returns (bool) {
-        (bool success, bytes memory output) = destination.call{value: value}(
-            data
-        );
-        emit ExternalCallOutput(value, data, output);
+        (bool success, ) = destination.call{value: value}(data);
         return success;
     }
 
@@ -378,5 +401,9 @@ contract MultiSigWallet {
         for (i = from; i < to; i++)
             _transactionIds[i - from] = transactionIdsTemp[i];
         return _transactionIds;
+    }
+
+    function getTransaction(uint256 transactionId) external view returns(KasepLibrary.Transaction memory) {
+        return transactions[transactionId];
     }
 }

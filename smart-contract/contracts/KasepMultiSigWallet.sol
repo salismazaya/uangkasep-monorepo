@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "./MultiSigWallet.sol";
 
 contract KasepMultiSigWallet is MultiSigWallet {
     uint256 public amountPerMonth;
-    uint256 public payInterval = 30 days;
+    uint256 public payInterval;
     uint256 public created;
     address public idrt;
 
@@ -46,13 +47,35 @@ contract KasepMultiSigWallet is MultiSigWallet {
         address _idrt,
         uint256 _amountPerMonth
     ) MultiSigWallet(_owners, _required) {
+        _initialize(_owners, _idrt, _amountPerMonth);
+        _initialized();
+    }
+
+    function _initialized() internal initializer {}
+
+    function initialize(
+        address[] memory _owners,
+        uint256 _required,
+        address _idrt,
+        uint256 _amountPerMonth
+    ) external initializer {
+        super.initialize(_owners, _required);
+        _initialize(_owners, _idrt, _amountPerMonth);
+    }
+
+    function _initialize(
+        address[] memory _owners,
+        address _idrt,
+        uint256 _amountPerMonth
+    ) internal {
         amountPerMonth = _amountPerMonth;
         idrt = _idrt;
         created = block.timestamp;
+        payInterval = 30 days;
 
         // all owners in multisig wallet set to currentTimestamp - payInterval
         // As a result, the owners have to pay the bill (in this case the owners have 1 month's bill)
-        address[] memory owners = getOwners();
+        address[] memory owners = _owners;
         for (uint8 i = 0; i < owners.length; i++) {
             address owner = owners[i];
             lastUserPay[owner] = block.timestamp - payInterval;
