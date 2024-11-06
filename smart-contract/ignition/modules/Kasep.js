@@ -2,7 +2,7 @@ const { buildModule } = require("@nomicfoundation/hardhat-ignition/modules");
 
 require('dotenv').config();
 
-const kasep = (m, inputIdrt) => {
+const kasep = (m, idrt) => {
   const inputOwners = process.env.OWNERS;
   const inputRequired = process.env.VOTING_REQUIRED;
   const inputAmount = process.env.AMOUNT_PER_MONTH;
@@ -12,10 +12,10 @@ const kasep = (m, inputIdrt) => {
 
   const amount = m.getParameter('_amountPerMonth', inputAmount);
 
-  const kasepmultisig = m.contract("KasepMultiSigWallet", [
+  const kasepmultisig = m.contract("KasepMultiSigWalletConstructor", [
     owners,
     required,
-    inputIdrt,
+    idrt,
     amount
   ]);
 
@@ -24,7 +24,8 @@ const kasep = (m, inputIdrt) => {
 
 module.exports = {
   default: buildModule("Kasep", (m) => {
-    return kasep(m, process.env.IDRT_ADDRESS);
+    const idrt = m.getParameter('_idrt', process.env.IDRT_ADDRESS);
+    return kasep(m, idrt);
   }),
   kasep
 };

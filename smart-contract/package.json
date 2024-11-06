@@ -7,7 +7,9 @@
   "scripts": {
     "test": "hardhat test",
     "deploy": "hardhat ignition deploy ignition/modules/Kasep.js --network polygon",
-    "deploy-dev": "hardhat ignition deploy ignition/modules/KasepDev.js --network sepolia"
+    "deploy-dev": "hardhat ignition deploy ignition/modules/KasepDev.js --network sepolia",
+    "deploy-full": "hardhat ignition deploy ignition/modules/KasepProxy.js --network polygon",
+    "deploy-full-dev": "hardhat ignition deploy ignition/modules/KasepProxy.js --network sepolia"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.0",

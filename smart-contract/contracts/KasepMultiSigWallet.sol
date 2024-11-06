@@ -41,24 +41,12 @@ contract KasepMultiSigWallet is MultiSigWallet {
     event BillPaid(address indexed owner, address to, uint256 amount);
     event Checkpoint(address[] addressed);
 
-    constructor(
-        address[] memory _owners,
-        uint256 _required,
-        address _idrt,
-        uint256 _amountPerMonth
-    ) MultiSigWallet(_owners, _required) {
-        _initialize(_owners, _idrt, _amountPerMonth);
-        _initialized();
-    }
-
-    function _initialized() internal initializer {}
-
     function initialize(
         address[] memory _owners,
         uint256 _required,
         address _idrt,
         uint256 _amountPerMonth
-    ) external initializer {
+    ) public initializer {
         super.initialize(_owners, _required);
         _initialize(_owners, _idrt, _amountPerMonth);
     }

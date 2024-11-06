@@ -7,9 +7,8 @@ import "./KasepLibrary.sol";
 contract KasepProxy is TransparentUpgradeableProxy {
     constructor(
         address _logic,
-        address admin_,
         bytes memory _data
-    ) TransparentUpgradeableProxy(_logic, admin_, _data) {}
+    ) TransparentUpgradeableProxy(_logic, msg.sender, _data) {}
 
     function getAdmin() external view returns (address) {
         return _getAdmin();

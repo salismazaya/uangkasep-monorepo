@@ -13,16 +13,12 @@ describe("KasepProxy", function () {
 
         const KasepMultiSigWallet = await ethers.getContractFactory("KasepMultiSigWallet")
 
-        const kasepMultiSigWallet = await KasepMultiSigWallet.deploy(
-            [account1, account2, account3], 2, idrt, amount
-        )
-        const kasepMultiSigWallet2 = await KasepMultiSigWallet.deploy(
-            [account1, account2, account3], 2, idrt, amount
-        )
+        const kasepMultiSigWallet = await KasepMultiSigWallet.deploy()
+        const kasepMultiSigWallet2 = await KasepMultiSigWallet.deploy()
 
         const KasepProxy = await ethers.getContractFactory("KasepProxy")
         const kasepProxy = await KasepProxy.deploy(
-            kasepMultiSigWallet, account1, "0x"
+            kasepMultiSigWallet, "0x"
         )
         const proxyKasepMultiSigWallet = await ethers.getContractAt("KasepMultiSigWallet", kasepProxy)
         await proxyKasepMultiSigWallet.connect(account2).initialize([account1, account2, account3], 2, idrt, amount)

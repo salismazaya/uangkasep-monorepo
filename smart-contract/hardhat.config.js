@@ -11,15 +11,10 @@ module.exports = {
         version: "0.8.27",
       },
     ],
-    // overrides: {
-    //   'contracts/MultiSigWallet.sol': {
-    //     version: "0.4.15"
-    //   }
-    // }
   },
   networks: {
     polygon: {
-      url: 'https://polygon-rpc.com',
+      url: 'https://polygon.llamarpc.com',
       accounts: [process.env.PRIVATE_KEY]
     },
     sepolia: {

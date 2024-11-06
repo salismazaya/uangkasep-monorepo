@@ -112,17 +112,13 @@ contract MultiSigWallet is Initializable {
     function initialize(
         address[] memory _owners,
         uint256 _required
-    ) public validRequirement(_owners.length, _required) {
+    ) public {
         for (uint i = 0; i < _owners.length; i++) {
             require(!isOwner[_owners[i]] && _owners[i] != address(0));
             isOwner[_owners[i]] = true;
         }
         owners = _owners;
         required = _required;
-    }
-
-    constructor(address[] memory _owners, uint256 _required) {
-        initialize(_owners, _required);
     }
     
 

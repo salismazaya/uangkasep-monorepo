@@ -11,7 +11,7 @@ describe("Kasep", function () {
 
         let amount = 1000000;
 
-        const KasepMultiSigWallet = await ethers.getContractFactory("KasepMultiSigWallet");
+        const KasepMultiSigWallet = await ethers.getContractFactory("KasepMultiSigWalletConstructor");
         const kasepMultiSigWallet = await KasepMultiSigWallet.deploy(
             [account1, account2, account3], 2, idrt, amount
         );
@@ -53,7 +53,7 @@ describe("Kasep", function () {
 
         let amount = 1000000;
 
-        const KasepMultiSigWallet = await ethers.getContractFactory("KasepMultiSigWallet");
+        const KasepMultiSigWallet = await ethers.getContractFactory("KasepMultiSigWalletConstructor");
         const kasepMultiSigWallet = await KasepMultiSigWallet.deploy(
             [account1, account2, account3, account4], 2, idrt, amount
         );
