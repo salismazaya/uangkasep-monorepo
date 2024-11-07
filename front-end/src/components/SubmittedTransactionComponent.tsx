@@ -21,7 +21,7 @@ export default () => {
                     <div className="stat-value">{transactionCount?.toString()}</div>
                     <div className="stat-desc">
                         <div className='mt-2'>
-                            <Link className='text-sm hover:text-gray-400' href={'/transactions'}>View All</Link>
+                            <Link className='text-sm text-yellow-500 hover:text-yellow-400' href={'/transactions'}>View All</Link>
                         </div>
                     </div>
                 </div>

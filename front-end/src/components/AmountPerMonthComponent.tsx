@@ -52,7 +52,7 @@ export default () => {
                     </div>
                     <div className="stat-desc">
                         <div className='mt-2'>
-                            <button className='text-sm hover:text-gray-400' onClick={() => setOpenModal(true)}>Change</button>
+                            <button className='text-sm text-yellow-500 hover:text-yellow-400' onClick={() => setOpenModal(true)}>Change</button>
                         </div>
                     </div>
                 </div>
