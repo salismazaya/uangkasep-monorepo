@@ -48,7 +48,7 @@ describe("KasepProxy", function () {
         await proxyKasepMultiSigWallet.connect(account3).confirmTransaction(0)
         await expect(proxyAdmin.upgrade(kasepProxy, 0)).to.be.revertedWith("KasepProxyAdmin: invalid selector")
 
-        calldata = proxyKasepMultiSigInterface.encodeFunctionData("upgradeUsingProxyAdmin", [kasepMultiSigWallet.target, 0])
+        calldata = proxyKasepMultiSigInterface.encodeFunctionData("upgradeUsingProxyAdmin", [kasepMultiSigWallet.target, 1])
         await proxyKasepMultiSigWallet.connect(account2).submitTransaction(proxyAdmin.target, 0, calldata)
        
         await expect(proxyAdmin.upgrade(kasepProxy, 1)).to.be.revertedWith("KasepProxyAdmin: not confirmed yet")

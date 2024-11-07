@@ -17,7 +17,7 @@ contract KasepProxyAdmin {
             proxy,
             transactionId
         );
-        bytes memory data = getData(transaction);
+        bytes memory data = getUpgradeData(transactionId, transaction);
         (bool success, ) = proxy.call(data);
         require(success, "KasepProxyAdmin: upgrade failed");
     }
@@ -50,11 +50,13 @@ contract KasepProxyAdmin {
         transaction = abi.decode(output, (KasepLibrary.Transaction));
     }
 
-    function getData(
+    function getUpgradeData(
+        uint256 transactionId,
         KasepLibrary.Transaction memory transaction
     ) private view returns (bytes memory) {
         address newImplementation;
         bytes4 selector;
+        uint256 expectedTransactionId;
         bytes memory data = transaction.data;
 
         assembly {
@@ -74,6 +76,16 @@ contract KasepProxyAdmin {
             transaction.destination == address(this),
             "KasepProxyAdmin: invalid destination"
         );
+
+        assembly {
+            expectedTransactionId := mload(add(data, 68))
+        }
+
+        require(
+            transactionId == expectedTransactionId,
+            "KasepProxyAdmin: invalid transactionId"
+        );
+
         require(
             transaction.executed == false,
             "KasepProxyAdmin: transaction has been executed"

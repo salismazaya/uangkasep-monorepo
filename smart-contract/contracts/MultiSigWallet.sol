@@ -8,9 +8,8 @@ pragma solidity ^0.8.20;
 /// @author Stefan George - <stefan.george@consensys.net>
 
 import "./KasepLibrary.sol";
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
-contract MultiSigWallet is Initializable {
+contract MultiSigWallet {
     /*
      *  Events
      */
@@ -30,7 +29,7 @@ contract MultiSigWallet is Initializable {
     mapping(uint256 => KasepLibrary.Transaction) public transactions;
     mapping(uint256 => mapping(address => bool)) public confirmations;
     mapping(address => bool) public isOwner;
-    mapping(uint256 => bool) lock;
+    mapping(string => mapping(uint256 => bool)) lock;
 
     address[] public owners;
     uint256 public required;
@@ -89,11 +88,11 @@ contract MultiSigWallet is Initializable {
         _;
     }
 
-    modifier noReentrancy(uint256 _id) {
-        lock[_id] = true;
-        require(lock[_id] == false);
+    modifier noReentrancy(string memory key, uint256 value) {
+        require(lock[key][value] != true);
+        lock[key][value] = true;
         _;
-        lock[_id] = false;
+        lock[key][value] = false;
     }
 
     /// @dev Fallback function allows to deposit ether.
@@ -103,44 +102,23 @@ contract MultiSigWallet is Initializable {
         if (msg.value > 0) emit Deposit(msg.sender, msg.value);
     }
 
-    /*
-     * Public functions
-     */
-    /// @dev Contract constructor sets initial owners and required number of confirmations.
-    /// @param _owners List of initial owners.
-    /// @param _required Number of required confirmations.
-    function initialize(
-        address[] memory _owners,
-        uint256 _required
-    ) public {
-        for (uint i = 0; i < _owners.length; i++) {
-            require(!isOwner[_owners[i]] && _owners[i] != address(0));
-            isOwner[_owners[i]] = true;
-        }
-        owners = _owners;
-        required = _required;
-    }
-    
-
-    /// @dev Allows to add a new owner. Transaction has to be sent by wallet.
-    /// @param owner Address of new owner.
-    function addOwner(
+    function _addOwner(
         address owner
-    )
-        public
-        onlyWallet
-        ownerDoesNotExist(owner)
-        notNull(owner)
-        validRequirement(owners.length + 1, required)
-    {
+    ) internal ownerDoesNotExist(owner) notNull(owner) {
         isOwner[owner] = true;
         owners.push(owner);
         emit OwnerAddition(owner);
     }
 
-    /// @dev Allows to remove an owner. Transaction has to be sent by wallet.
-    /// @param owner Address of owner.
-    function removeOwner(address owner) public onlyWallet ownerExists(owner) {
+    /// @dev Allows to add a new owner. Transaction has to be sent by wallet.
+    /// @param owner Address of new owner.
+    function addOwner(
+        address owner
+    ) external onlyWallet validRequirement(owners.length + 1, required) {
+        _addOwner(owner);
+    }
+
+    function _removeOwner(address owner) internal ownerExists(owner) {
         isOwner[owner] = false;
         for (uint i = 0; i < owners.length - 1; i++)
             if (owners[i] == owner) {
@@ -148,17 +126,20 @@ contract MultiSigWallet is Initializable {
                 break;
             }
         // owners.length -= 1;
-        if (required > owners.length) changeRequirement(owners.length);
+        if (required > owners.length) _changeRequirement(owners.length);
         emit OwnerRemoval(owner);
     }
 
-    /// @dev Allows to replace an owner with a new owner. Transaction has to be sent by wallet.
-    /// @param owner Address of owner to be replaced.
-    /// @param newOwner Address of new owner.
-    function replaceOwner(
+    /// @dev Allows to remove an owner. Transaction has to be sent by wallet.
+    /// @param owner Address of owner.
+    function removeOwner(address owner) external onlyWallet {
+        _removeOwner(owner);
+    }
+
+    function _replaceOwner(
         address owner,
         address newOwner
-    ) public onlyWallet ownerExists(owner) ownerDoesNotExist(newOwner) {
+    ) internal ownerExists(owner) ownerDoesNotExist(newOwner) {
         for (uint i = 0; i < owners.length; i++)
             if (owners[i] == owner) {
                 owners[i] = newOwner;
@@ -170,13 +151,24 @@ contract MultiSigWallet is Initializable {
         emit OwnerAddition(newOwner);
     }
 
-    /// @dev Allows to change the number of required confirmations. Transaction has to be sent by wallet.
-    /// @param _required Number of required confirmations.
-    function changeRequirement(
+    /// @dev Allows to replace an owner with a new owner. Transaction has to be sent by wallet.
+    /// @param owner Address of owner to be replaced.
+    /// @param newOwner Address of new owner.
+    function replaceOwner(address owner, address newOwner) external onlyWallet {
+        _replaceOwner(owner, newOwner);
+    }
+
+    function _changeRequirement(
         uint256 _required
-    ) public onlyWallet validRequirement(owners.length, _required) {
+    ) internal validRequirement(owners.length, _required) {
         required = _required;
         emit RequirementChange(_required);
+    }
+
+    /// @dev Allows to change the number of required confirmations. Transaction has to be sent by wallet.
+    /// @param _required Number of required confirmations.
+    function changeRequirement(uint256 _required) external onlyWallet {
+        _changeRequirement(_required);
     }
 
     function markTransactionAsExecuted(
@@ -198,7 +190,7 @@ contract MultiSigWallet is Initializable {
         uint256 value,
         bytes memory data
     ) public returns (uint256) {
-        uint256 transactionId = addTransaction(destination, value, data);
+        uint256 transactionId = _addTransaction(destination, value, data);
         confirmTransaction(transactionId);
         return transactionId;
     }
@@ -241,10 +233,11 @@ contract MultiSigWallet is Initializable {
         ownerExists(msg.sender)
         confirmed(transactionId, msg.sender)
         notExecuted(transactionId)
+        noReentrancy("execute", transactionId)
     {
         if (isConfirmed(transactionId)) {
             KasepLibrary.Transaction storage txn = transactions[transactionId];
-            if (external_call(txn.destination, txn.value, txn.data)) {
+            if (_external_call(txn.destination, txn.value, txn.data)) {
                 txn.executed = true;
                 emit Execution(transactionId);
             } else {
@@ -257,10 +250,10 @@ contract MultiSigWallet is Initializable {
     /// @dev Allows public to execute a confirmed transaction.
     function executeTransactionReverted(
         uint256 transactionId
-    ) external notExecuted(transactionId) noReentrancy(transactionId) {
+    ) public notExecuted(transactionId) noReentrancy("execute", transactionId) {
         require(isConfirmed(transactionId));
         KasepLibrary.Transaction storage txn = transactions[transactionId];
-        require(external_call(txn.destination, txn.value, txn.data));
+        require(_external_call(txn.destination, txn.value, txn.data));
         txn.executed = true;
         emit Execution(transactionId);
     }
@@ -286,7 +279,7 @@ contract MultiSigWallet is Initializable {
     /// @param value Transaction ether value.
     /// @param data Transaction data payload.
     /// @return Returns transaction ID.
-    function addTransaction(
+    function _addTransaction(
         address destination,
         uint256 value,
         bytes memory data
@@ -303,7 +296,7 @@ contract MultiSigWallet is Initializable {
         return transactionId;
     }
 
-    function external_call(
+    function _external_call(
         address destination,
         uint256 value,
         bytes memory data
@@ -399,7 +392,9 @@ contract MultiSigWallet is Initializable {
         return _transactionIds;
     }
 
-    function getTransaction(uint256 transactionId) external view returns(KasepLibrary.Transaction memory) {
+    function getTransaction(
+        uint256 transactionId
+    ) public view returns (KasepLibrary.Transaction memory) {
         return transactions[transactionId];
     }
 }

@@ -4,7 +4,7 @@ pragma solidity ^0.8.27;
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "./MultiSigWallet.sol";
 
-contract KasepMultiSigWallet is MultiSigWallet {
+contract KasepMultiSigWallet is MultiSigWallet, Initializable {
     uint256 public amountPerMonth;
     uint256 public payInterval;
     uint256 public created;
@@ -38,7 +38,7 @@ contract KasepMultiSigWallet is MultiSigWallet {
         uint256 oldPayInterval,
         uint256 newPayInterval
     );
-    event BillPaid(address indexed owner, address to, uint256 amount);
+    event BillPaid(address indexed owner, uint256 amount);
     event Checkpoint(address[] addressed);
 
     function initialize(
@@ -47,12 +47,12 @@ contract KasepMultiSigWallet is MultiSigWallet {
         address _idrt,
         uint256 _amountPerMonth
     ) public initializer {
-        super.initialize(_owners, _required);
-        _initialize(_owners, _idrt, _amountPerMonth);
+        _initialize(_owners, _required, _idrt, _amountPerMonth);
     }
 
     function _initialize(
         address[] memory _owners,
+        uint256 _required,
         address _idrt,
         uint256 _amountPerMonth
     ) internal {
@@ -66,8 +66,11 @@ contract KasepMultiSigWallet is MultiSigWallet {
         address[] memory owners = _owners;
         for (uint8 i = 0; i < owners.length; i++) {
             address owner = owners[i];
+            _addOwner(owner);
             lastUserPay[owner] = block.timestamp - payInterval;
         }
+
+        _changeRequirement(_required);
     }
 
     // serves to cover monthly installment fees
@@ -149,11 +152,11 @@ contract KasepMultiSigWallet is MultiSigWallet {
             amount
         );
 
-        bool success = external_call(idrt, 0, data);
+        bool success = _external_call(idrt, 0, data);
 
         require(success, "KasepMultiSigWallet: TRANSFER IDRT FAILED");
 
         lastUserPay[msg.sender] = block.timestamp;
-        emit BillPaid(msg.sender, address(this), amount);
+        emit BillPaid(msg.sender, amount);
     }
 }
