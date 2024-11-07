@@ -173,8 +173,7 @@ contract MultiSigWallet {
 
     function markTransactionAsExecuted(
         uint256 transactionId
-    ) public notExecuted(transactionId) {
-        require(msg.sender == address(this) || isConfirmed(transactionId));
+    ) public onlyWallet notExecuted(transactionId) {
         KasepLibrary.Transaction storage txn = transactions[transactionId];
         txn.executed = true;
         emit Execution(transactionId);

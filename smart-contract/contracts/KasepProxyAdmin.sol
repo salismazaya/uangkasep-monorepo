@@ -9,9 +9,14 @@ contract KasepProxyAdmin {
     address public realAdmin;
 
     constructor() {
+        // realAdmin is contract address
+        // This is necessary because if the admin accesses the function of the proxy implementation, access will be denied
+        // read this https://docs.openzeppelin.com/contracts/4.x/api/proxy#TransparentUpgradeableProxy
         realAdmin = address(new CustomProxyAdmin(address(this)));
+        // enter realAdmin address in KasepProxy not this contract address
     }
 
+    // because it is possible that the deployer entered the contract address incorrectly
     function changeToRealAdmin(address proxy) external {
         bytes memory data = abi.encodeWithSignature(
             "changeAdmin(address)",
@@ -50,9 +55,15 @@ contract KasepProxyAdmin {
         uint256 transactionId
     ) private {
         bytes memory data = abi.encodeWithSignature(
-            "markTransactionAsExecuted(uint256)",
-            transactionId
+            "external_call(address,uint256,bytes)",
+            proxy,
+            0,
+            abi.encodeWithSignature(
+                "markTransactionAsExecuted(uint256)",
+                transactionId
+            )
         );
+
         (bool success, ) = proxy.call(data);
         require(success, "KasepProxy: transaction failed");
     }
