@@ -24,10 +24,10 @@ describe("KasepProxy", function () {
         await proxyKasepMultiSigWallet.connect(account2).initialize([account1, account2, account3], 2, idrt, amount)
 
         let implementation_address = await kasepProxy.getImplementation()
-        await kasepProxy.connect(account2).upgrade(kasepMultiSigWallet2)
+        await kasepProxy.connect(account2).upgradeTo(kasepMultiSigWallet2)
         expect(await kasepProxy.getImplementation()).equal(implementation_address)
 
-        await kasepProxy.connect(account1).upgrade(kasepMultiSigWallet2)
+        await kasepProxy.connect(account1).upgradeTo(kasepMultiSigWallet2)
         expect(await kasepProxy.getImplementation()).equal(kasepMultiSigWallet2)
 
         const ProxyAdmin = await ethers.getContractFactory("KasepProxyAdmin")
@@ -36,25 +36,28 @@ describe("KasepProxy", function () {
         await kasepProxy.connect(account1).changeAdmin(proxyAdmin)
         expect(await kasepProxy.getAdmin()).equal(proxyAdmin)
 
+        await proxyAdmin.changeToRealAdmin(kasepProxy)
+        expect(await kasepProxy.getAdmin()).equal(await proxyAdmin.realAdmin())
+
         const proxyKasepMultiSigInterface = new Interface([
-            "function upgradeUsingProxyAdmin(address,uint256)",
+            "function upgradeTo(address)",
             "function typooo(address,uint256)",
         ])
 
         let calldata = proxyKasepMultiSigInterface.encodeFunctionData("typooo", [kasepMultiSigWallet.target, 0])
         await proxyKasepMultiSigWallet.connect(account2).submitTransaction(proxyAdmin.target, 0, calldata)
-        await expect(proxyAdmin.upgrade(kasepProxy, 0)).to.be.revertedWith("KasepProxyAdmin: not confirmed yet")
+        await expect(proxyAdmin.confirmUpgrade(kasepProxy, 0)).to.be.revertedWith("KasepProxyAdmin: not confirmed yet")
 
         await proxyKasepMultiSigWallet.connect(account3).confirmTransaction(0)
-        await expect(proxyAdmin.upgrade(kasepProxy, 0)).to.be.revertedWith("KasepProxyAdmin: invalid selector")
+        await expect(proxyAdmin.confirmUpgrade(kasepProxy, 0)).to.be.revertedWith("KasepProxyAdmin: invalid selector")
 
-        calldata = proxyKasepMultiSigInterface.encodeFunctionData("upgradeUsingProxyAdmin", [kasepMultiSigWallet.target, 1])
+        calldata = proxyKasepMultiSigInterface.encodeFunctionData("upgradeTo", [kasepMultiSigWallet.target])
         await proxyKasepMultiSigWallet.connect(account2).submitTransaction(proxyAdmin.target, 0, calldata)
-       
-        await expect(proxyAdmin.upgrade(kasepProxy, 1)).to.be.revertedWith("KasepProxyAdmin: not confirmed yet")
+
+        await expect(proxyAdmin.confirmUpgrade(kasepProxy, 1)).to.be.revertedWith("KasepProxyAdmin: not confirmed yet")
         await proxyKasepMultiSigWallet.connect(account3).confirmTransaction(1)
-        
-        await proxyAdmin.upgrade(kasepProxy, 1)
+
+        await proxyAdmin.confirmUpgrade(kasepProxy, 1)
 
         expect(await kasepProxy.getImplementation()).equal(kasepMultiSigWallet.target)
     })
