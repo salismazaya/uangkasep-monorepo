@@ -1,13 +1,13 @@
 'use client'
 
-import { FormatRupiah } from "@arismun/format-rupiah"
-import { useClientOnceOnly, useIdrtBalance } from "../hooks"
+import { useClientOnceOnly, useWbtcBalance } from "../hooks"
 import { useAccount } from "wagmi"
 import { ContractType, register } from "../helpers/realtime"
+import BitcoinValueComponent from "./BitcoinValueComponent"
 
 export default () => {
     const { address } = useAccount()
-    const { idrtBalance: myIdrtBalance, refetch } = useIdrtBalance(address)
+    const { wbtcBalance: myWbtcBalance, refetch } = useWbtcBalance(address)
 
     useClientOnceOnly(() => {
         register({
@@ -22,9 +22,9 @@ export default () => {
     return (
         <div className="stats shadow shadow-blue-300 w-full mt-3">
             <div className="stat">
-                <div className="stat-title">Your IDRT Balance</div>
+                <div className="stat-title">Your Bitcoin Balance</div>
                 <div className="stat-value">
-                    <FormatRupiah value={myIdrtBalance}></FormatRupiah>
+                    <BitcoinValueComponent value={myWbtcBalance}></BitcoinValueComponent>
                 </div>
             </div>
         </div>

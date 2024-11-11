@@ -31,7 +31,6 @@ export const useIsOwner = (address: `0x${string}` | undefined) => {
         functionName: 'isOwner',
         args: [address]
     })
-
     return { isOwner, refetch }
 }
 
@@ -78,15 +77,19 @@ export const useExecutedTransactionCount = () => {
     return { executedTransactionCount, refetch }
 }
 
-export const useIdrtBalance = (address: `0x${string}` | undefined) => {
-    const { data: idrtBalance, refetch }: NumberInterface = useReadContract({
+export const useWbtcBalance = (address: `0x${string}` | undefined) => {
+    const { data: wbtcBalance, refetch }: NumberInterface = useReadContract({
         abi: erc20Abi,
         address: IdrtAddress,
         functionName: 'balanceOf',
         args: [address]
     })
+    let value = Number(wbtcBalance as unknown)
+    if (isNaN(value)) {
+        value = 0
+    }
 
-    return { idrtBalance: ((BigInt(idrtBalance || 0) / BigInt(10 ** 6)) as unknown) as number || 0 / (10 ** 6), refetch }
+    return { wbtcBalance: value / (10 ** 8), refetch }
 }
 
 export const useAmountPerMonth = () => {
@@ -96,7 +99,7 @@ export const useAmountPerMonth = () => {
         functionName: 'amountPerMonth',
     })
 
-    return { amountPerMonth: ((BigInt(amountPerMonth || 0) / BigInt(10 ** 6)) as unknown) as number || 0 / (10 ** 6), refetch }
+    return { amountPerMonth: Number((BigInt(amountPerMonth || 0) / BigInt(10 ** 6)) as unknown) as number || 0 / (10 ** 6), refetch }
 }
 
 interface ContractsInterface {
@@ -151,7 +154,11 @@ export const useGetBill = (address: `0x${string}` | undefined) => {
         functionName: 'getBill',
         args: [address]
     })
-    return { bill: ((BigInt(bill || 0) / BigInt(10 ** 6)) as unknown) as number, refetch }
+    let value = Number(bill as unknown)
+    if (isNaN(value)) {
+        value = 0
+    }
+    return { bill: value / (10 ** 8), refetch }
 }
 
 export const useClientOnceOnly = (callback: () => void) => {

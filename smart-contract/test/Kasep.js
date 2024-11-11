@@ -1,51 +1,62 @@
 const { expect } = require("chai");
 const { Interface } = require("ethers");
 const helpers = require("@nomicfoundation/hardhat-network-helpers");
+const { loadFixture } = require("@nomicfoundation/hardhat-toolbox/network-helpers");
 
 describe("Kasep", function () {
+    const deployChainlinkPriceFeed = async () => {
+        const ChainlinkFeed = await ethers.getContractFactory("DummyChainlinkPriceFeed");
+        const chainlinkFeed = await ChainlinkFeed.deploy(82033 * (10 ** 8));
+        return chainlinkFeed;
+    }
+
     it("Visibility check", async () => {
         const KasepMultiSigWallet = await ethers.getContractFactory("KasepMultiSigWallet");
         const kasepMultiSigWallet = await KasepMultiSigWallet.deploy();
 
-        expect(kasepMultiSigWallet._initialize, "_initialize must not-exposed").to.equal(undefined);
-        ["initialize", "changeAmountPerMonth", "changePayInterval", "checkpoint", "getBill", "payBill"].forEach(function_name => {
+        ['_initialize', '_changeDataFeed'].forEach(function_name => {
+            expect(kasepMultiSigWallet[function_name], `${function_name.toString()} must exposed`).to.equal(undefined);
+        });
+        ["initialize", "changeAmountPerMonth", "changePayInterval", "checkpoint", "getBill", "payBill", "changeDataFeed"].forEach(function_name => {
             expect(kasepMultiSigWallet[function_name], `${function_name.toString()} must exposed`).to.not.equal(undefined);
-        })
+        });
     });
 
     it("Balance check", async () => {
         const [account1, account2, account3, account4] = await ethers.getSigners();
+        const chainlinkFeed = await loadFixture(deployChainlinkPriceFeed);
 
-        const Idrt = await ethers.getContractFactory("ERC20");
-        const idrt = await Idrt.deploy("IDRT", "IDRT", account1);
+        const Token = await ethers.getContractFactory("ERC20");
+        const token = await Token.deploy("TOKEN", "TKN", account1);
 
-        let amount = 1000000;
+        let amount = 1 * (10 ** 6);
+        let bill_amount = 1219;
 
         const KasepMultiSigWallet = await ethers.getContractFactory("KasepMultiSigWalletConstructor");
         const kasepMultiSigWallet = await KasepMultiSigWallet.deploy(
-            [account1, account2, account3], 2, idrt, amount
+            chainlinkFeed, [account1, account2, account3], 2, token, amount
         );
 
         expect(await kasepMultiSigWallet.getBill(account4)).to.equal(0, "unregister owner bill must 0");
-        expect(await kasepMultiSigWallet.getBill(account1)).to.equal(amount, `registered owner bill must ${amount}`);
-        expect(await kasepMultiSigWallet.getBill(account2)).to.equal(amount, `registered owner bill must ${amount}`);
-        expect(await kasepMultiSigWallet.getBill(account3)).to.equal(amount, `registered owner bill must ${amount}`);
+        expect(await kasepMultiSigWallet.getBill(account1)).to.equal(bill_amount, `registered owner bill must ${bill_amount}`);
+        expect(await kasepMultiSigWallet.getBill(account2)).to.equal(bill_amount, `registered owner bill must ${bill_amount}`);
+        expect(await kasepMultiSigWallet.getBill(account3)).to.equal(bill_amount, `registered owner bill must ${bill_amount}`);
 
-        await idrt.transfer(account2, amount);
-        await idrt.transfer(account3, amount);
+        await token.transfer(account2, amount);
+        await token.transfer(account3, amount);
 
-        await expect(kasepMultiSigWallet.payBill()).to.be.revertedWith("KasepMultiSigWallet: TRANSFER IDRT FAILED");
-        await idrt.approve(kasepMultiSigWallet, amount);
+        await expect(kasepMultiSigWallet.payBill()).to.be.revertedWith("KasepMultiSigWallet: TRANSFER WBTC FAILED");
+        await token.approve(kasepMultiSigWallet, amount);
         await kasepMultiSigWallet.payBill();
 
         expect(await kasepMultiSigWallet.getBill(account1)).to.equal(0, `${account1} bill must 0 because paid`);
 
-        await idrt.connect(account2).approve(kasepMultiSigWallet, amount);
+        await token.connect(account2).approve(kasepMultiSigWallet, amount);
         await kasepMultiSigWallet.connect(account2).payBill();
 
         expect(await kasepMultiSigWallet.getBill(account2)).to.equal(0, `${account2} bill must 0 because paid`);
 
-        expect(await kasepMultiSigWallet.getBill(account3)).to.equal(amount, `${account3} bill must ${amount} because not paid`);
+        expect(await kasepMultiSigWallet.getBill(account3)).to.equal(bill_amount, `${account3} bill must ${amount} because not paid`);
 
         expect(await kasepMultiSigWallet.getBill(account4)).to.equal(0, "unregister owner bill must 0");
 
@@ -58,14 +69,15 @@ describe("Kasep", function () {
         // const MultiSigWallet = await ethers.getContractFactory("MultiSigWallet");
         // const multiSigWallet = await MultiSigWallet.deploy([account1, account2, account3, account4], 2);
 
-        const Idrt = await ethers.getContractFactory("ERC20");
-        const idrt = await Idrt.deploy("IDRT", "IDRT", account1);
+        const Token = await ethers.getContractFactory("ERC20");
+        const token = await Token.deploy("TOKEN", "TKN", account1);
 
         let amount = 1000000;
+        const chainlinkFeed = await loadFixture(deployChainlinkPriceFeed);
 
         const KasepMultiSigWallet = await ethers.getContractFactory("KasepMultiSigWalletConstructor");
         const kasepMultiSigWallet = await KasepMultiSigWallet.deploy(
-            [account1, account2, account3, account4], 2, idrt, amount
+            chainlinkFeed, [account1, account2, account3, account4], 2, token, amount
         );
 
         amount = amount * 4;
@@ -101,12 +113,12 @@ describe("Kasep", function () {
         await kasepMultiSigWallet.submitTransaction(kasepMultiSigWallet, 0, calldata);
         await kasepMultiSigWallet.connect(account2).confirmTransaction(2);
 
-        await idrt.connect(account5).approve(kasepMultiSigWallet, amount);
+        await token.connect(account5).approve(kasepMultiSigWallet, amount);
 
         await expect(kasepMultiSigWallet.connect(account5).payBill()).to.be.revertedWith("KasepMultiSigWallet: NOT TIME YET");
 
         await helpers.time.increase(twenty_days);
-        await idrt.transfer(account5, amount * 2);
+        await token.transfer(account5, amount * 2);
 
         await kasepMultiSigWallet.connect(account5).payBill();
 

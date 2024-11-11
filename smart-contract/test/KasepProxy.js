@@ -1,8 +1,14 @@
 const { expect } = require("chai")
 const { Interface } = require("ethers")
-const helpers = require("@nomicfoundation/hardhat-network-helpers")
+const { loadFixture } = require("@nomicfoundation/hardhat-toolbox/network-helpers");
 
 describe("KasepProxy", function () {
+    const deployChainlinkPriceFeed = async () => {
+        const ChainlinkFeed = await ethers.getContractFactory("DummyChainlinkPriceFeed");
+        const chainlinkFeed = await ChainlinkFeed.deploy(1);
+        return chainlinkFeed;
+    }
+
     it("Functional test", async () => {
         const [account1, account2, account3] = await ethers.getSigners()
 
@@ -10,6 +16,7 @@ describe("KasepProxy", function () {
         const idrt = await Idrt.deploy("IDRT", "IDRT", account1)
 
         let amount = 1000000
+        const chainlinkFeed = await loadFixture(deployChainlinkPriceFeed);
 
         const KasepMultiSigWallet = await ethers.getContractFactory("KasepMultiSigWallet")
 
@@ -21,7 +28,7 @@ describe("KasepProxy", function () {
             kasepMultiSigWallet, "0x"
         )
         const proxyKasepMultiSigWallet = await ethers.getContractAt("KasepMultiSigWallet", kasepProxy)
-        await proxyKasepMultiSigWallet.connect(account2).initialize([account1, account2, account3], 2, idrt, amount)
+        await proxyKasepMultiSigWallet.connect(account2).initialize(chainlinkFeed, [account1, account2, account3], 2, idrt, amount)
 
         let implementation_address = await kasepProxy.getImplementation()
         await kasepProxy.connect(account2).upgradeTo(kasepMultiSigWallet2)

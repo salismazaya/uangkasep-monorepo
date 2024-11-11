@@ -1,23 +1,22 @@
 'use client'
 
-import { FormatRupiah } from "@arismun/format-rupiah"
-import { useClientOnceOnly, useIdrtBalance } from "../hooks"
+import { useClientOnceOnly, useWbtcBalance } from "../hooks"
 import { IdrtAddress, kasepAddress } from "../variables"
 import { ContractType, register } from "../helpers/realtime"
 import ModalComponent from "./ModalComponent"
 import { useState } from "react"
 import { contractExecutor, contractInterface } from "@/helpers/ethers"
-import { readContract, writeContract } from "wagmi/actions"
+import { writeContract } from "wagmi/actions"
 import config from "@/wagmi"
 import kasepAbi from "@/abis/kasep.abi"
 import { toast } from "react-toastify"
 import { ethers } from "ethers"
-import erc20Abi from "@/abis/erc20.abi"
+import BitcoinValueComponent from "./BitcoinValueComponent"
 
 export default () => {
-    const { idrtBalance, refetch } = useIdrtBalance(kasepAddress)
+    const { wbtcBalance, refetch } = useWbtcBalance(kasepAddress)
     const [openModal, setOpenModal] = useState(false)
-    const [amount, setAmount] = useState<number | undefined>()
+    const [amount, setAmount] = useState<string | undefined>()
     const [showAddressInvalid, setShowAddressInvalid] = useState(false)
     const [recipient, setRecipient] = useState("");
 
@@ -41,7 +40,7 @@ export default () => {
     })
 
     const submit = async () => {
-        if (amount === undefined || amount <= 0 || isNaN(amount)) {
+        if (amount === undefined || parseFloat(amount) <= 0 || isNaN(parseFloat(amount))) {
             toast.error("Invalid amount")
             return
         }
@@ -49,7 +48,7 @@ export default () => {
         contractExecutor(async () => {
             const calldata = contractInterface.encodeFunctionData("transfer", [
                 recipient,
-                Math.floor((amount || 0) * (10 ** 6))
+                Math.floor((parseFloat(amount) || 0) * (10 ** 8))
             ])
             const hash = await writeContract(config, {
                 abi: kasepAbi,
@@ -89,7 +88,7 @@ export default () => {
                         <div className="label">
                             <span className="label-text">Amount to Transfer</span>
                         </div>
-                        <input type="text" placeholder="Amount" className="input input-bordered w-full" value={!isNaN(parseInt(amount?.toString() || 'kasep')) ? amount?.toString() : ''} onChange={(x) => setAmount(parseInt(x.target.value))} />
+                        <input type="text" placeholder="Amount" className="input input-bordered w-full" value={amount || ''} onChange={(x) => setAmount(x.target.value)} />
                     </label>
                     <div className="modal-action">
                         <form method="dialog">
@@ -102,9 +101,9 @@ export default () => {
 
             <div className="stats shadow">
                 <div className="stat">
-                    <div className="stat-title">IDRT Balance</div>
-                    <div className="stat-value">
-                        <FormatRupiah value={idrtBalance}></FormatRupiah>
+                    <div className="stat-title">Bitcoin Balance</div>
+                    <div className="stat-value sm:text-2xl lg:text-4xl">
+                        <BitcoinValueComponent value={wbtcBalance}></BitcoinValueComponent>
                     </div>
                     <div className="stat-desc">
                         <div className='mt-2'>

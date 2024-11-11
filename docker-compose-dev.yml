@@ -19,7 +19,7 @@ services:
   mongodb:
     image: mongo:8-noble
     volumes:
-      - uangkasepmongo:/data/db
+      - uangkasepmongo2:/data/db
     environment:
       - MONGO_INITDB_ROOT_USERNAME=salism3
       - MONGO_INITDB_ROOT_PASSWORD=sangatkasep
@@ -28,4 +28,4 @@ services:
   redis:
     image: redis:7.4.1-alpine3.20
 volumes:
-  uangkasepmongo:
+  uangkasepmongo2:

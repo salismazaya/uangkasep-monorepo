@@ -9,16 +9,16 @@ import { contractExecutor, contractInterface } from "../helpers/ethers"
 import { register, ContractType } from "../helpers/realtime"
 import kasepAbi from "@/abis/kasep.abi"
 import { kasepAddress } from "@/variables"
-import { FormatRupiah } from "@arismun/format-rupiah"
+import { toast } from "react-toastify"
 
 export default () => {
     const { amountPerMonth, refetch } = useAmountPerMonth()
     const [openModal, setOpenModal] = useState(false)
 
-    const [amountPerMonthValue, setAmountPerMonthValue] = useState<number | undefined>(parseInt(amountPerMonth?.toString() || 'kasep'))
+    const [amountPerMonthValue, setAmountPerMonthValue] = useState<string | undefined>(amountPerMonth?.toString())
 
     useEffect(() => {
-        setAmountPerMonthValue(amountPerMonth)
+        setAmountPerMonthValue(amountPerMonth.toString())
     }, [amountPerMonth])
 
     useClientOnceOnly(() => {
@@ -30,7 +30,12 @@ export default () => {
     })
 
     const execute = () => {
-        const calldata = contractInterface.encodeFunctionData("changeAmountPerMonth", [BigInt(amountPerMonthValue || 0) * BigInt(10 ** 6)])
+        const amount = parseFloat(amountPerMonthValue?.toString() || '0')
+        if (isNaN(amount)) {
+            toast.error("Invalid number")
+            return
+        }
+        const calldata = contractInterface.encodeFunctionData("changeAmountPerMonth", [BigInt(amount * (10 ** 6))])
         contractExecutor(async () => {
             const hash = await writeContract(config, {
                 abi: kasepAbi,
@@ -48,7 +53,7 @@ export default () => {
                 <div className="stat">
                     <div className="stat-title">Amount Per Month</div>
                     <div className="stat-value">
-                        <FormatRupiah value={amountPerMonth} />
+                        {amountPerMonth.toFixed(2)} USD
                     </div>
                     <div className="stat-desc">
                         <div className='mt-2'>
@@ -64,7 +69,7 @@ export default () => {
                         <div className="label">
                             <span className="label-text">Amount Per Month</span>
                         </div>
-                        <input type="text" placeholder="Amount Per Month" className="input input-bordered w-full" value={!isNaN(parseInt(amountPerMonthValue?.toString() || 'kasep')) ? amountPerMonthValue?.toString() : ''} onChange={(x) => setAmountPerMonthValue(parseInt(x.target.value))} />
+                        <input type="text" placeholder="Amount Per Month" className="input input-bordered w-full" value={amountPerMonthValue} onChange={(x) => setAmountPerMonthValue(x.target.value)} />
                     </label>
                     <div className="modal-action">
                         <form method="dialog">

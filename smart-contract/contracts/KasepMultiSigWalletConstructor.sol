@@ -5,11 +5,12 @@ import "./KasepMultiSigWallet.sol";
 
 contract KasepMultiSigWalletConstructor is KasepMultiSigWallet {
     constructor(
+        address _dataFeed,
         address[] memory _owners,
         uint256 _required,
-        address _idrt,
+        address _wbtc,
         uint256 _amountPerMonth
     ) {
-        initialize(_owners, _required, _idrt, _amountPerMonth);
+        initialize(_dataFeed, _owners, _required, _wbtc, _amountPerMonth);
     }
 }

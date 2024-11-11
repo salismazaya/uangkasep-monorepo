@@ -1,15 +1,13 @@
 'use client'
 
-import { FormatRupiah } from '@arismun/format-rupiah'
 import { useClientOnceOnly, useGetBill } from '../hooks'
 import { useAccount } from 'wagmi'
 import OwnersComponent from '../components/OwnersComponent'
-import IdrtBalanceComponent from '../components/IdrtBalanceComponent'
 import VotingRequiredComponent from '../components/VotingRequiredComponent'
 import SubmittedTransactionComponent from '../components/SubmittedTransactionComponent'
 import PendingTransactionComponent from '../components/PendingTransactionComponent'
 import ExecutedTransactionComponent from '../components/ExecutedTransactionComponent'
-import MyIdrtBalanceComponent from '../components/MyIdrtBalanceComponent'
+import MyWbtcBalanceComponent from '../components/MyWbtcBalanceComponent'
 import { contractExecutor } from '@/helpers/ethers'
 import { readContract, writeContract } from 'wagmi/actions'
 import config from '@/wagmi'
@@ -19,6 +17,8 @@ import { ContractType, register } from '@/helpers/realtime'
 import erc20Abi from '@/abis/erc20.abi'
 import AmountPerMonthComponent from '@/components/AmountPerMonthComponent'
 import { useEffect, useState } from 'react'
+import WbtcBalanceComponent from '@/components/WbtcBalanceComponent'
+import BitcoinValueComponent from '@/components/BitcoinValueComponent'
 
 const Home = () => {
   const { address } = useAccount()
@@ -84,30 +84,26 @@ const Home = () => {
           <div className="stat">
             <div className="stat-title">Your Bill</div>
             <div className="stat-value">
-              <FormatRupiah value={bill}></FormatRupiah>
+              <BitcoinValueComponent value={bill} />
             </div>
             <div className="stat-desc">
-              {isClient && address !== undefined && <button className='btn btn-primary mt-3 text-lg px-8 py-1' onClick={pay}>Pay</button>}
-              {isClient && address === undefined && <button className='btn btn-primary btn-disabled mt-3 text-lg px-8 py-1'>Pay</button>}
+              {isClient && address !== undefined && bill > 0 && <button className='btn btn-primary mt-3 text-lg px-8 py-1' onClick={pay}>Pay</button>}
+              {isClient && (address === undefined || bill <= 0) && <button className='btn btn-primary btn-disabled mt-3 text-lg px-8 py-1'>Pay</button>}
             </div>
           </div>
         </div>
 
-        <MyIdrtBalanceComponent></MyIdrtBalanceComponent>
+        <MyWbtcBalanceComponent />
       </div>
 
       <div className='grid grid-cols-2 lg:grid-cols-4 mt-3 gap-2'>
-        <IdrtBalanceComponent />
+        <WbtcBalanceComponent />
         <AmountPerMonthComponent />
         <OwnersComponent />
         <VotingRequiredComponent />
         <SubmittedTransactionComponent />
         <PendingTransactionComponent />
         <ExecutedTransactionComponent />
-      </div>
-
-      <div className='mt-4'>
-        {/* <HistoryTransactionComponent></HistoryTransactionComponent> */}
       </div>
     </>
   )

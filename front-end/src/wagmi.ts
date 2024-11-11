@@ -48,7 +48,7 @@ const connectors = connectorsForWallets(
 // })
 
 const transports: Record<number, Transport> = {
-  [sepolia.id]: http(),
+  [sepolia.id]: http('https://1rpc.io/sepolia'),
   [polygon.id]: http(),
 }
 

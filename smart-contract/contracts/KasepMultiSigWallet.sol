@@ -3,12 +3,15 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "./MultiSigWallet.sol";
+import "hardhat/console.sol";
+import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
 
 contract KasepMultiSigWallet is MultiSigWallet, Initializable {
     uint256 public amountPerMonth;
     uint256 public payInterval;
     uint256 public created;
-    address public idrt;
+    address public wbtc;
+    AggregatorV3Interface public dataFeed;
 
     modifier onlyWallet() override {
         require(
@@ -38,26 +41,34 @@ contract KasepMultiSigWallet is MultiSigWallet, Initializable {
         uint256 oldPayInterval,
         uint256 newPayInterval
     );
+    event DataFeedChanged(
+        address indexed executor,
+        address oldDataFeed,
+        address newDataFeed
+    );
     event BillPaid(address indexed owner, uint256 amount);
     event Checkpoint(address[] addressed);
 
     function initialize(
+        address _dataFeed,
         address[] memory _owners,
         uint256 _required,
-        address _idrt,
+        address _wbtc,
         uint256 _amountPerMonth
     ) public initializer {
-        _initialize(_owners, _required, _idrt, _amountPerMonth);
+        _initialize(_dataFeed, _owners, _required, _wbtc, _amountPerMonth);
     }
 
     function _initialize(
+        address _dataFeed,
         address[] memory _owners,
         uint256 _required,
-        address _idrt,
+        address _wbtc,
         uint256 _amountPerMonth
     ) internal {
+        dataFeed = AggregatorV3Interface(_dataFeed);
         amountPerMonth = _amountPerMonth;
-        idrt = _idrt;
+        wbtc = _wbtc;
         created = block.timestamp;
         payInterval = 30 days;
 
@@ -88,6 +99,16 @@ contract KasepMultiSigWallet is MultiSigWallet, Initializable {
         );
     }
 
+    function _changeDataFeed(address _newDataFeed) internal {
+        address previousDataFeed = address(dataFeed);
+        dataFeed = AggregatorV3Interface(_newDataFeed);
+        emit DataFeedChanged(msg.sender, previousDataFeed, address(dataFeed));
+    }
+
+    function changeDataFeed(address _newDataFeed) external onlyWallet {
+        _changeDataFeed(_newDataFeed);
+    }
+
     // how long does it take the owner to pay the monthly fee
     // This must be executed with a multisig contract and
     // of course must go through a voting process
@@ -113,6 +134,11 @@ contract KasepMultiSigWallet is MultiSigWallet, Initializable {
         emit Checkpoint(_addresses);
     }
 
+    function getChainlinkDataFeedLatestAnswer() public view returns (uint256) {
+        (, int answer, , , ) = dataFeed.latestRoundData();
+        return uint256(answer);
+    }
+
     // if owner not registered in multisig contract: return 0
     // if pay interval not reached: return 0
     // if new owner registered: lastUserPay = created 😱
@@ -134,12 +160,14 @@ contract KasepMultiSigWallet is MultiSigWallet, Initializable {
 
         uint256 result = ((timestamp - _lastUserPay) / payInterval) *
             amountPerMonth;
-        return result;
+        result = result * (10 ** 10);
+        return result / getChainlinkDataFeedLatestAnswer();
+        // output is decimals 8
     }
 
     // only registered owner can execute this function
     // this function call _getBill for billing information
-    // owner must approve idrt for this contract
+    // owner must approve wbtc for this contract
     // error if time not reached
     function payBill() external onlyMultiSigOwner {
         uint256 amount = getBill(msg.sender);
@@ -152,9 +180,9 @@ contract KasepMultiSigWallet is MultiSigWallet, Initializable {
             amount
         );
 
-        bool success = _external_call(idrt, 0, data);
+        bool success = _external_call(wbtc, 0, data);
 
-        require(success, "KasepMultiSigWallet: TRANSFER IDRT FAILED");
+        require(success, "KasepMultiSigWallet: TRANSFER WBTC FAILED");
 
         lastUserPay[msg.sender] = block.timestamp;
         emit BillPaid(msg.sender, amount);
