@@ -1,6 +1,6 @@
 import { useReadContract, useReadContracts } from "wagmi"
 import { IsOwnerInteface, OwnersInterface, NumberInterface, ArrayBigIntInterface } from "../interfaces"
-import { IdrtAddress, kasepAddress } from "../variables"
+import { wbtcAddress, kasepAddress } from "../variables"
 import erc20Abi from "../abis/erc20.abi"
 import kasepAbi from "../abis/kasep.abi"
 import { useEffect, useState } from "react"
@@ -80,7 +80,7 @@ export const useExecutedTransactionCount = () => {
 export const useWbtcBalance = (address: `0x${string}` | undefined) => {
     const { data: wbtcBalance, refetch }: NumberInterface = useReadContract({
         abi: erc20Abi,
-        address: IdrtAddress,
+        address: wbtcAddress,
         functionName: 'balanceOf',
         args: [address]
     })

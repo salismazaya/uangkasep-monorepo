@@ -2,7 +2,7 @@
 
 import { contractInterface } from "@/helpers/ethers"
 import { useTransaction } from "@/hooks"
-import { IdrtAddress } from "@/variables"
+import { wbtcAddress } from "@/variables"
 import { TransactionDescription } from "ethers"
 import Image from "next/image"
 import Link from "next/link"
@@ -31,7 +31,7 @@ export default function FunctionComponent({ transactionId }: { transactionId: bi
                     <td>Caption</td>
                     <td className="break-all">
                         <span>Transfer {amount.toString()} </span>
-                        <Link target="_blank" href={'https://polygonscan.com/token/' + IdrtAddress} className="text-blue-500 hover:text-blue-600 font-semibold">
+                        <Link target="_blank" href={'https://polygonscan.com/token/' + wbtcAddress} className="text-blue-500 hover:text-blue-600 font-semibold">
                             <Image className="inline" width={20} height={20} src={"/idrt.png"} alt={"IDRT Logo"}></Image>
                             <span> IDRT</span>
                         </Link>

@@ -1,7 +1,7 @@
 'use client'
 
 import { Contract, ethers } from "ethers"
-import { IdrtAddress, kasepAddress, wssRpcUrl } from "../variables"
+import { wbtcAddress, kasepAddress, wssRpcUrl } from "../variables"
 import erc20Abi from "../abis/erc20.abi"
 import kasepAbi from "../abis/kasep.abi"
 
@@ -25,7 +25,7 @@ export const register = ({ contract, abi, callback }: { contract: ContractType, 
     }
 
     if (idrtContract === undefined) {
-        idrtContract = new Contract(IdrtAddress, erc20Abi, provider)
+        idrtContract = new Contract(wbtcAddress, erc20Abi, provider)
     }
     
     const [functionName, rawArgs] = abi.split("(", 2)

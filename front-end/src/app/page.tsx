@@ -12,7 +12,7 @@ import { contractExecutor } from '@/helpers/ethers'
 import { readContract, writeContract } from 'wagmi/actions'
 import config from '@/wagmi'
 import kasepAbi from '@/abis/kasep.abi'
-import { IdrtAddress, kasepAddress } from '@/variables'
+import { wbtcAddress, kasepAddress } from '@/variables'
 import { ContractType, register } from '@/helpers/realtime'
 import erc20Abi from '@/abis/erc20.abi'
 import AmountPerMonthComponent from '@/components/AmountPerMonthComponent'
@@ -33,7 +33,7 @@ const Home = () => {
   const pay = async () => {
     const allowance = await readContract(config, {
       abi: erc20Abi,
-      address: IdrtAddress,
+      address: wbtcAddress,
       functionName: 'allowance',
       args: [address, kasepAddress]
     })
@@ -51,7 +51,7 @@ const Home = () => {
       await contractExecutor(async () => {
         const hash = await writeContract(config, {
           abi: erc20Abi,
-          address: IdrtAddress,
+          address: wbtcAddress,
           functionName: 'approve',
           args: [kasepAddress, amount_with_decimals]
         })

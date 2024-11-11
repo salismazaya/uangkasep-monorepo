@@ -1,7 +1,7 @@
 'use client'
 
 import { useClientOnceOnly, useWbtcBalance } from "../hooks"
-import { IdrtAddress, kasepAddress } from "../variables"
+import { wbtcAddress, kasepAddress } from "../variables"
 import { ContractType, register } from "../helpers/realtime"
 import ModalComponent from "./ModalComponent"
 import { useState } from "react"
@@ -54,7 +54,7 @@ export default () => {
                 abi: kasepAbi,
                 address: kasepAddress,
                 functionName: 'submitTransaction',
-                args: [IdrtAddress, 0, calldata]
+                args: [wbtcAddress, 0, calldata]
             })
             return hash
         })
