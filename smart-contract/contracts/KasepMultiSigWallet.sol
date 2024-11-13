@@ -3,7 +3,6 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "./MultiSigWallet.sol";
-import "hardhat/console.sol";
 import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
 
 contract KasepMultiSigWallet is MultiSigWallet, Initializable {
