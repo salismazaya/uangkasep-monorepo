@@ -31,11 +31,12 @@ export default () => {
 
     const execute = () => {
         const amount = parseFloat(amountPerMonthValue?.toString() || '0')
+        const amount_with_decimals = Math.floor(Number(amount) * (10 ** 8))
         if (isNaN(amount)) {
             toast.error("Invalid number")
             return
         }
-        const calldata = contractInterface.encodeFunctionData("changeAmountPerMonth", [BigInt(amount * (10 ** 6))])
+        const calldata = contractInterface.encodeFunctionData("changeAmountPerMonth", [BigInt(amount_with_decimals)])
         contractExecutor(async () => {
             const hash = await writeContract(config, {
                 abi: kasepAbi,

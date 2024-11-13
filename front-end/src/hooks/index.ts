@@ -99,7 +99,8 @@ export const useAmountPerMonth = () => {
         functionName: 'amountPerMonth',
     })
 
-    return { amountPerMonth: Number((BigInt(amountPerMonth || 0) / BigInt(10 ** 6)) as unknown) as number || 0 / (10 ** 6), refetch }
+    return { amountPerMonth: Number(amountPerMonth || 0) / (10 ** 8), refetch }
+
 }
 
 interface ContractsInterface {
