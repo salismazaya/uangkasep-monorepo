@@ -23,17 +23,18 @@ export default function FunctionComponent({ transactionId }: { transactionId: bi
             function_ = 'Unknown'
         }
 
-        if (function_.startsWith('transfer(')) {
-            const amount = BigInt(iface?.args[1] || 0) / BigInt(10 ** 6)
+        if (function_.startsWith('transfer(') && transaction[0].toLowerCase() === wbtcAddress.toLowerCase()) {
+            const amount = (Number(iface?.args[1]) || 0) / (10 ** 8)
+            const amount_string = amount.toFixed(6)
             const recipient = iface?.args[0]
             caption = (
                 <tr>
                     <td>Caption</td>
                     <td className="break-all">
-                        <span>Transfer {amount.toString()} </span>
+                        <span>Transfer {amount_string} </span>
                         <Link target="_blank" href={'https://polygonscan.com/token/' + wbtcAddress} className="text-blue-500 hover:text-blue-600 font-semibold">
-                            <Image className="inline" width={20} height={20} src={"/idrt.png"} alt={"IDRT Logo"}></Image>
-                            <span> IDRT</span>
+                            <Image className="inline" width={20} height={20} src={"/wbtc.webp"} alt={"WBTC Logo"}></Image>
+                            <span> WBTC</span>
                         </Link>
                         <span> to </span>
                         <Link target="_blank" href={'https://polygonscan.com/address/' + recipient} className="text-blue-500 hover:text-blue-600 font-semibold">{recipient}</Link>

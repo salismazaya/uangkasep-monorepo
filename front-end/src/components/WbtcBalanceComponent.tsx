@@ -31,7 +31,7 @@ export default () => {
 
     useClientOnceOnly(() => {
         register({
-            contract: ContractType.IDRT,
+            contract: ContractType.WBTC,
             abi: 'Transfer(from,to,value)',
             callback: (from, to) => {
                 if (from == kasepAddress || to == kasepAddress) refetch()

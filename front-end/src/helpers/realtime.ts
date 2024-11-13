@@ -9,11 +9,11 @@ let provider: ethers.WebSocketProvider | undefined;
 
 export enum ContractType {
     KASEP,
-    IDRT
+    WBTC
 }
 
 let kasepContract: Contract | undefined;
-let idrtContract: Contract | undefined;
+let wbtcContract: Contract | undefined;
 
 export const register = ({ contract, abi, callback }: { contract: ContractType, abi: `${string}(${any})`, callback: (...args: any[]) => void }) => {
     if (provider === undefined) {
@@ -24,8 +24,8 @@ export const register = ({ contract, abi, callback }: { contract: ContractType, 
         kasepContract = new Contract(kasepAddress, kasepAbi, provider)
     }
 
-    if (idrtContract === undefined) {
-        idrtContract = new Contract(wbtcAddress, erc20Abi, provider)
+    if (wbtcContract === undefined) {
+        wbtcContract = new Contract(wbtcAddress, erc20Abi, provider)
     }
     
     const [functionName, rawArgs] = abi.split("(", 2)
@@ -36,8 +36,8 @@ export const register = ({ contract, abi, callback }: { contract: ContractType, 
     const postCallback = eval(`(${args}) => callback(${args})`)
 
     switch (contract) {
-        case ContractType.IDRT:
-            idrtContract.on(functionName, postCallback)
+        case ContractType.WBTC:
+            wbtcContract.on(functionName, postCallback)
             break
         case ContractType.KASEP:
             kasepContract.on(functionName, postCallback)
