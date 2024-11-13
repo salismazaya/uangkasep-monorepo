@@ -45,15 +45,15 @@ const Home = () => {
       args: [address]
     })
 
-    const amount_with_decimals = BigInt(amount as bigint * BigInt(10 ** 6))
+    // const amount_with_decimals = BigInt(amount as bigint / BigInt(10 ** 8))
 
-    if (allowance as bigint < amount_with_decimals) {
+    if (Number(allowance) < Number(amount)) {
       await contractExecutor(async () => {
         const hash = await writeContract(config, {
           abi: erc20Abi,
           address: wbtcAddress,
           functionName: 'approve',
-          args: [kasepAddress, amount_with_decimals]
+          args: [kasepAddress, Number(amount)]
         })
         return hash
       })
