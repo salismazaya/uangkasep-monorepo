@@ -99,7 +99,7 @@ export const useAmountPerMonth = () => {
         functionName: 'amountPerMonth',
     })
 
-    return { amountPerMonth: Number(amountPerMonth || 0) / (10 ** 8), refetch }
+    return { amountPerMonth: Number(amountPerMonth || 0) / (10 ** 6), refetch }
 
 }
 
