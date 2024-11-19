@@ -11,13 +11,13 @@ describe("Kasep", function () {
     }
 
     it("Visibility check", async () => {
-        const KasepMultiSigWallet = await ethers.getContractFactory("KasepMultiSigWallet");
+        const KasepMultiSigWallet = await ethers.getContractFactory("KasepMultiSigWalletCore");
         const kasepMultiSigWallet = await KasepMultiSigWallet.deploy();
 
         ['_initialize', '_changeDataFeed'].forEach(function_name => {
             expect(kasepMultiSigWallet[function_name], `${function_name.toString()} must exposed`).to.equal(undefined);
         });
-        ["initialize", "changeAmountPerMonth", "changePayInterval", "checkpoint", "getBill", "payBill", "changeDataFeed"].forEach(function_name => {
+        ["changeAmountPerMonth", "changePayInterval", "checkpoint", "getBill", "payBill", "changeDataFeed"].forEach(function_name => {
             expect(kasepMultiSigWallet[function_name], `${function_name.toString()} must exposed`).to.not.equal(undefined);
         });
     });
