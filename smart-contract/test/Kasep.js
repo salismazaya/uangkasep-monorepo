@@ -4,11 +4,11 @@ const helpers = require("@nomicfoundation/hardhat-network-helpers");
 
 describe("Kasep", function () {
     it("Visibility check", async () => {
-        const KasepMultiSigWallet = await ethers.getContractFactory("KasepMultiSigWallet");
+        const KasepMultiSigWallet = await ethers.getContractFactory("KasepMultiSigWalletCore");
         const kasepMultiSigWallet = await KasepMultiSigWallet.deploy();
 
         expect(kasepMultiSigWallet._initialize, "_initialize must not-exposed").to.equal(undefined);
-        ["initialize", "changeAmountPerMonth", "changePayInterval", "checkpoint", "getBill", "payBill"].forEach(function_name => {
+        ["changeAmountPerMonth", "changePayInterval", "checkpoint", "getBill", "payBill"].forEach(function_name => {
             expect(kasepMultiSigWallet[function_name], `${function_name.toString()} must exposed`).to.not.equal(undefined);
         })
     });

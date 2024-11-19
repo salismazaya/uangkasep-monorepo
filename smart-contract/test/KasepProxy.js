@@ -11,7 +11,7 @@ describe("KasepProxy", function () {
 
         let amount = 1000000
 
-        const KasepMultiSigWallet = await ethers.getContractFactory("KasepMultiSigWallet")
+        const KasepMultiSigWallet = await ethers.getContractFactory("KasepMultiSigWalletInitializable")
 
         const kasepMultiSigWallet = await KasepMultiSigWallet.deploy()
         const kasepMultiSigWallet2 = await KasepMultiSigWallet.deploy()
@@ -20,7 +20,7 @@ describe("KasepProxy", function () {
         const kasepProxy = await KasepProxy.deploy(
             kasepMultiSigWallet, "0x"
         )
-        const proxyKasepMultiSigWallet = await ethers.getContractAt("KasepMultiSigWallet", kasepProxy)
+        const proxyKasepMultiSigWallet = await ethers.getContractAt("KasepMultiSigWalletInitializable", kasepProxy)
         await proxyKasepMultiSigWallet.connect(account2).initialize([account1, account2, account3], 2, idrt, amount)
 
         let implementation_address = await kasepProxy.getImplementation()

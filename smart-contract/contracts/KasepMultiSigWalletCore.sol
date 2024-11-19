@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "./MultiSigWallet.sol";
 
-contract KasepMultiSigWallet is MultiSigWallet, Initializable {
+contract KasepMultiSigWalletCore is MultiSigWallet {
     uint256 public amountPerMonth;
     uint256 public payInterval;
     uint256 public created;
@@ -40,15 +39,6 @@ contract KasepMultiSigWallet is MultiSigWallet, Initializable {
     );
     event BillPaid(address indexed owner, uint256 amount);
     event Checkpoint(address[] addressed);
-
-    function initialize(
-        address[] memory _owners,
-        uint256 _required,
-        address _idrt,
-        uint256 _amountPerMonth
-    ) public initializer {
-        _initialize(_owners, _required, _idrt, _amountPerMonth);
-    }
 
     function _initialize(
         address[] memory _owners,
