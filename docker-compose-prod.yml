@@ -5,6 +5,9 @@ services:
       dockerfile: Dockerfile.prod
     ports:
       - 8030:8030
+    depends_on:
+      - redis
+      - mongodb
   frontend:
     build:
       context: front-end
@@ -16,6 +19,9 @@ services:
       context: back-end
       dockerfile: Dockerfile.prod
     command: python3 worker.py
+    depends_on:
+      - redis
+      - mongodb
   mongodb:
     image: mongo:8-noble
     volumes:

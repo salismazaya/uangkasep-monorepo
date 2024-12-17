@@ -5,6 +5,9 @@ services:
       - 8030:8030
     volumes:
       - ./back-end:/app
+    depends_on:
+      - redis
+      - mongodb
   frontend:
     build: front-end
     ports:
@@ -16,6 +19,9 @@ services:
     volumes:
       - ./back-end:/app
     command: nodemon worker.py
+    depends_on:
+      - redis
+      - mongodb
   mongodb:
     image: mongo:8-noble
     volumes:
