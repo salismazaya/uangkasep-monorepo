@@ -1,6 +1,6 @@
-granian[reload]
 pymongo
 fastapi==0.115.2
+fastapi-cli
 web3==6.*
 python-dotenv
 redis
