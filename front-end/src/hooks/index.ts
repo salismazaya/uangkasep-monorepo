@@ -140,7 +140,7 @@ export const useBillingOwner = () => {
     for (const billingOwner of data || []) {
         billingsOwner.push({
             address: contracts[count].args?.[0],
-            billing: ((billingOwner / BigInt(10 ** 6)) as unknown) as number
+            billing: ((billingOwner / BigInt(10 ** 8)) as unknown) as number
         })
         count++
     }
