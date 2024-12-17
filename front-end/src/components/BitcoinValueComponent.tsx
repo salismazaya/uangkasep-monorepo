@@ -1,3 +1,3 @@
 export default ({ value }: { value: number }) => {
-    return <span>{value.toFixed(8)} BTC</span>
+    return <span>{Number(value).toFixed(8)} BTC</span>
 }
