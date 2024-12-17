@@ -2,13 +2,13 @@
 
 import Link from "next/link"
 import { useBillingOwner, useClientOnceOnly } from "../../hooks"
-import { FormatRupiah } from "@arismun/format-rupiah"
 import { contractExecutor, contractInterface } from "@/helpers/ethers"
 import { writeContract } from "wagmi/actions"
 import config from "@/wagmi"
 import kasepAbi from "@/abis/kasep.abi"
 import { kasepAddress } from "@/variables"
 import { ContractType, register } from "@/helpers/realtime"
+import BitcoinValueComponent from "../BitcoinValueComponent"
 
 export default ({ hook }: { hook: (active: boolean) => void }) => {
     const { billingsOwner, refetch } = useBillingOwner()
@@ -98,7 +98,7 @@ export default ({ hook }: { hook: (active: boolean) => void }) => {
                                             </p>
                                         </td>
                                         <td>
-                                            <FormatRupiah value={billingOwner.billing}></FormatRupiah>
+                                            <BitcoinValueComponent value={billingOwner.billing}></BitcoinValueComponent>
                                         </td>
                                         <td >
                                             <button onClick={() => delete_(billingOwner.address as `0x${string}`)} className="btn btn-error btn-xs text-error-content">Delete</button>
